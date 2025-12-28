@@ -1,0 +1,279 @@
+{
+    "actions": [],
+    "autoname": "field:wp_source_id",
+    "creation": "2025-12-28 12:00:00.000000",
+    "doctype": "DocType",
+    "engine": "InnoDB",
+    "field_order": [
+        "sync_metadata_section",
+        "wp_source_id",
+        "synced_at",
+        "column_break_meta",
+        "wp_created_at",
+        "wp_updated_at",
+        "registration_section",
+        "registration_id",
+        "zoho_id",
+        "column_break_reg",
+        "status",
+        "registration_date",
+        "contact_section",
+        "first_name",
+        "last_name",
+        "email",
+        "column_break_contact",
+        "phone",
+        "site",
+        "program_section",
+        "program_name",
+        "program_id",
+        "column_break_program",
+        "session_name",
+        "session_id",
+        "player_section",
+        "player_first_name",
+        "player_last_name",
+        "column_break_player",
+        "player_dob",
+        "player_age",
+        "payment_section",
+        "amount",
+        "payment_status",
+        "column_break_payment",
+        "payment_method",
+        "transaction_id",
+        "notes_section",
+        "notes",
+        "raw_data"
+    ],
+    "fields": [
+        {
+            "fieldname": "sync_metadata_section",
+            "fieldtype": "Section Break",
+            "label": "Sync Metadata"
+        },
+        {
+            "fieldname": "wp_source_id",
+            "fieldtype": "Data",
+            "label": "WP Source ID",
+            "reqd": 1,
+            "unique": 1,
+            "description": "Primary key from wp_zoho_registrations_new_site"
+        },
+        {
+            "fieldname": "synced_at",
+            "fieldtype": "Datetime",
+            "label": "Last Synced At",
+            "read_only": 1
+        },
+        {
+            "fieldname": "column_break_meta",
+            "fieldtype": "Column Break"
+        },
+        {
+            "fieldname": "wp_created_at",
+            "fieldtype": "Datetime",
+            "label": "WP Created At"
+        },
+        {
+            "fieldname": "wp_updated_at",
+            "fieldtype": "Datetime",
+            "label": "WP Updated At"
+        },
+        {
+            "fieldname": "registration_section",
+            "fieldtype": "Section Break",
+            "label": "Registration Info"
+        },
+        {
+            "fieldname": "registration_id",
+            "fieldtype": "Data",
+            "label": "Registration ID"
+        },
+        {
+            "fieldname": "zoho_id",
+            "fieldtype": "Data",
+            "label": "Zoho ID",
+            "description": "ID in Zoho system"
+        },
+        {
+            "fieldname": "column_break_reg",
+            "fieldtype": "Column Break"
+        },
+        {
+            "fieldname": "status",
+            "fieldtype": "Data",
+            "label": "Status"
+        },
+        {
+            "fieldname": "registration_date",
+            "fieldtype": "Date",
+            "label": "Registration Date"
+        },
+        {
+            "fieldname": "contact_section",
+            "fieldtype": "Section Break",
+            "label": "Contact Info"
+        },
+        {
+            "fieldname": "first_name",
+            "fieldtype": "Data",
+            "label": "First Name"
+        },
+        {
+            "fieldname": "last_name",
+            "fieldtype": "Data",
+            "label": "Last Name"
+        },
+        {
+            "fieldname": "email",
+            "fieldtype": "Data",
+            "label": "Email",
+            "options": "Email"
+        },
+        {
+            "fieldname": "column_break_contact",
+            "fieldtype": "Column Break"
+        },
+        {
+            "fieldname": "phone",
+            "fieldtype": "Data",
+            "label": "Phone"
+        },
+        {
+            "fieldname": "site",
+            "fieldtype": "Data",
+            "label": "Site"
+        },
+        {
+            "fieldname": "program_section",
+            "fieldtype": "Section Break",
+            "label": "Program Info"
+        },
+        {
+            "fieldname": "program_name",
+            "fieldtype": "Data",
+            "label": "Program Name"
+        },
+        {
+            "fieldname": "program_id",
+            "fieldtype": "Data",
+            "label": "Program ID"
+        },
+        {
+            "fieldname": "column_break_program",
+            "fieldtype": "Column Break"
+        },
+        {
+            "fieldname": "session_name",
+            "fieldtype": "Data",
+            "label": "Session Name"
+        },
+        {
+            "fieldname": "session_id",
+            "fieldtype": "Data",
+            "label": "Session ID"
+        },
+        {
+            "fieldname": "player_section",
+            "fieldtype": "Section Break",
+            "label": "Player Info"
+        },
+        {
+            "fieldname": "player_first_name",
+            "fieldtype": "Data",
+            "label": "Player First Name"
+        },
+        {
+            "fieldname": "player_last_name",
+            "fieldtype": "Data",
+            "label": "Player Last Name"
+        },
+        {
+            "fieldname": "column_break_player",
+            "fieldtype": "Column Break"
+        },
+        {
+            "fieldname": "player_dob",
+            "fieldtype": "Date",
+            "label": "Player Date of Birth"
+        },
+        {
+            "fieldname": "player_age",
+            "fieldtype": "Int",
+            "label": "Player Age"
+        },
+        {
+            "fieldname": "payment_section",
+            "fieldtype": "Section Break",
+            "label": "Payment Info"
+        },
+        {
+            "fieldname": "amount",
+            "fieldtype": "Currency",
+            "label": "Amount"
+        },
+        {
+            "fieldname": "payment_status",
+            "fieldtype": "Data",
+            "label": "Payment Status"
+        },
+        {
+            "fieldname": "column_break_payment",
+            "fieldtype": "Column Break"
+        },
+        {
+            "fieldname": "payment_method",
+            "fieldtype": "Data",
+            "label": "Payment Method"
+        },
+        {
+            "fieldname": "transaction_id",
+            "fieldtype": "Data",
+            "label": "Transaction ID"
+        },
+        {
+            "fieldname": "notes_section",
+            "fieldtype": "Section Break",
+            "label": "Notes"
+        },
+        {
+            "fieldname": "notes",
+            "fieldtype": "Text",
+            "label": "Notes"
+        },
+        {
+            "fieldname": "raw_data",
+            "fieldtype": "JSON",
+            "label": "Raw Data (JSON)",
+            "description": "Original row data from WordPress for debugging"
+        }
+    ],
+    "links": [],
+    "modified": "2025-12-28 12:00:00.000000",
+    "modified_by": "Administrator",
+    "module": "WP Sync",
+    "name": "WP Zoho Registration",
+    "naming_rule": "By fieldname",
+    "owner": "Administrator",
+    "permissions": [
+        {
+            "create": 1,
+            "delete": 1,
+            "email": 1,
+            "export": 1,
+            "print": 1,
+            "read": 1,
+            "report": 1,
+            "role": "System Manager",
+            "share": 1,
+            "write": 1
+        }
+    ],
+    "search_fields": "first_name,last_name,email,player_first_name,player_last_name",
+    "sort_field": "synced_at",
+    "sort_order": "DESC",
+    "title_field": "email",
+    "track_changes": 1
+}
+

@@ -1,0 +1,157 @@
+{
+    "actions": [],
+    "autoname": "field:task_name",
+    "creation": "2025-12-28 12:00:00.000000",
+    "doctype": "DocType",
+    "engine": "InnoDB",
+    "field_order": [
+        "task_name",
+        "enabled",
+        "execution_order",
+        "sync_direction",
+        "column_break_basic",
+        "source_table",
+        "target_doctype",
+        "description",
+        "mapping_section",
+        "field_mapping",
+        "where_clause",
+        "status_section",
+        "last_run_at",
+        "last_run_status",
+        "column_break_status",
+        "rows_synced",
+        "last_error"
+    ],
+    "fields": [
+        {
+            "fieldname": "task_name",
+            "fieldtype": "Data",
+            "label": "Task Name",
+            "reqd": 1,
+            "unique": 1,
+            "description": "Unique identifier for this sync task"
+        },
+        {
+            "fieldname": "enabled",
+            "fieldtype": "Check",
+            "label": "Enabled",
+            "default": "1"
+        },
+        {
+            "fieldname": "execution_order",
+            "fieldtype": "Int",
+            "label": "Execution Order",
+            "default": "10",
+            "description": "Lower numbers run first"
+        },
+        {
+            "fieldname": "sync_direction",
+            "fieldtype": "Select",
+            "label": "Sync Direction",
+            "options": "WP to Frappe\nFrappe to WP\nBidirectional",
+            "default": "WP to Frappe",
+            "reqd": 1
+        },
+        {
+            "fieldname": "column_break_basic",
+            "fieldtype": "Column Break"
+        },
+        {
+            "fieldname": "source_table",
+            "fieldtype": "Data",
+            "label": "Source Table/View",
+            "reqd": 1,
+            "description": "WordPress table or view name (e.g., wp_zoho_registrations_new_site)"
+        },
+        {
+            "fieldname": "target_doctype",
+            "fieldtype": "Link",
+            "label": "Target DocType",
+            "options": "DocType",
+            "reqd": 1,
+            "description": "Frappe DocType to sync into"
+        },
+        {
+            "fieldname": "description",
+            "fieldtype": "Small Text",
+            "label": "Description"
+        },
+        {
+            "fieldname": "mapping_section",
+            "fieldtype": "Section Break",
+            "label": "Field Mapping"
+        },
+        {
+            "fieldname": "field_mapping",
+            "fieldtype": "JSON",
+            "label": "Field Mapping (JSON)",
+            "description": "JSON object mapping WP columns to Frappe fields. Example: {\"wp_column\": \"frappe_field\", \"id\": \"wp_source_id\"}"
+        },
+        {
+            "fieldname": "where_clause",
+            "fieldtype": "Small Text",
+            "label": "WHERE Clause (Optional)",
+            "description": "SQL WHERE clause to filter source data (without 'WHERE' keyword)"
+        },
+        {
+            "fieldname": "status_section",
+            "fieldtype": "Section Break",
+            "label": "Last Execution Status"
+        },
+        {
+            "fieldname": "last_run_at",
+            "fieldtype": "Datetime",
+            "label": "Last Run At",
+            "read_only": 1
+        },
+        {
+            "fieldname": "last_run_status",
+            "fieldtype": "Select",
+            "label": "Last Run Status",
+            "options": "\nSuccess\nFailed\nPartial",
+            "read_only": 1
+        },
+        {
+            "fieldname": "column_break_status",
+            "fieldtype": "Column Break"
+        },
+        {
+            "fieldname": "rows_synced",
+            "fieldtype": "Int",
+            "label": "Rows Synced",
+            "read_only": 1
+        },
+        {
+            "fieldname": "last_error",
+            "fieldtype": "Small Text",
+            "label": "Last Error",
+            "read_only": 1
+        }
+    ],
+    "links": [],
+    "modified": "2025-12-28 12:00:00.000000",
+    "modified_by": "Administrator",
+    "module": "WP Sync",
+    "name": "WP Sync Task",
+    "naming_rule": "By fieldname",
+    "owner": "Administrator",
+    "permissions": [
+        {
+            "create": 1,
+            "delete": 1,
+            "email": 1,
+            "export": 1,
+            "print": 1,
+            "read": 1,
+            "report": 1,
+            "role": "System Manager",
+            "share": 1,
+            "write": 1
+        }
+    ],
+    "sort_field": "execution_order",
+    "sort_order": "ASC",
+    "track_changes": 1
+}
+

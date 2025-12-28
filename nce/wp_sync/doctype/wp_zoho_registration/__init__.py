@@ -1,0 +1,2 @@
+# WP Zoho Registration DocType
+

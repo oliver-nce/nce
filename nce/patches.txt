@@ -1,0 +1,3 @@
+# Patches - database migrations
+# Format: app_name.patches.patch_module_name
+

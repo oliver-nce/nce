@@ -1,0 +1,136 @@
+{
+    "actions": [],
+    "creation": "2025-12-28 12:00:00.000000",
+    "doctype": "DocType",
+    "engine": "InnoDB",
+    "field_order": [
+        "connection_section",
+        "wp_db_host",
+        "wp_db_port",
+        "wp_db_name",
+        "column_break_conn",
+        "wp_db_user",
+        "wp_db_password",
+        "sync_settings_section",
+        "sync_enabled",
+        "sync_interval_minutes",
+        "column_break_sync",
+        "last_sync_at",
+        "status_section",
+        "connection_status",
+        "test_connection_button"
+    ],
+    "fields": [
+        {
+            "fieldname": "connection_section",
+            "fieldtype": "Section Break",
+            "label": "WordPress Database Connection"
+        },
+        {
+            "fieldname": "wp_db_host",
+            "fieldtype": "Data",
+            "label": "Database Host",
+            "reqd": 1,
+            "description": "MySQL/MariaDB host (e.g., localhost or IP address)"
+        },
+        {
+            "fieldname": "wp_db_port",
+            "fieldtype": "Int",
+            "label": "Database Port",
+            "default": "3306",
+            "reqd": 1
+        },
+        {
+            "fieldname": "wp_db_name",
+            "fieldtype": "Data",
+            "label": "Database Name",
+            "reqd": 1,
+            "description": "WordPress database name"
+        },
+        {
+            "fieldname": "column_break_conn",
+            "fieldtype": "Column Break"
+        },
+        {
+            "fieldname": "wp_db_user",
+            "fieldtype": "Data",
+            "label": "Database User",
+            "reqd": 1
+        },
+        {
+            "fieldname": "wp_db_password",
+            "fieldtype": "Password",
+            "label": "Database Password",
+            "reqd": 1
+        },
+        {
+            "fieldname": "sync_settings_section",
+            "fieldtype": "Section Break",
+            "label": "Sync Settings"
+        },
+        {
+            "fieldname": "sync_enabled",
+            "fieldtype": "Check",
+            "label": "Enable Scheduled Sync",
+            "default": "0",
+            "description": "Enable automatic scheduled synchronization"
+        },
+        {
+            "fieldname": "sync_interval_minutes",
+            "fieldtype": "Int",
+            "label": "Sync Interval (minutes)",
+            "default": "5",
+            "description": "How often to run sync (configured in hooks.py)"
+        },
+        {
+            "fieldname": "column_break_sync",
+            "fieldtype": "Column Break"
+        },
+        {
+            "fieldname": "last_sync_at",
+            "fieldtype": "Datetime",
+            "label": "Last Sync At",
+            "read_only": 1
+        },
+        {
+            "fieldname": "status_section",
+            "fieldtype": "Section Break",
+            "label": "Connection Status"
+        },
+        {
+            "fieldname": "connection_status",
+            "fieldtype": "Data",
+            "label": "Status",
+            "read_only": 1,
+            "default": "Not Tested"
+        },
+        {
+            "fieldname": "test_connection_button",
+            "fieldtype": "Button",
+            "label": "Test Connection"
+        }
+    ],
+    "issingle": 1,
+    "links": [],
+    "modified": "2025-12-28 12:00:00.000000",
+    "modified_by": "Administrator",
+    "module": "WP Sync",
+    "name": "WP Sync Settings",
+    "owner": "Administrator",
+    "permissions": [
+        {
+            "create": 1,
+            "delete": 1,
+            "email": 1,
+            "print": 1,
+            "read": 1,
+            "role": "System Manager",
+            "share": 1,
+            "write": 1
+        }
+    ],
+    "sort_field": "modified",
+    "sort_order": "DESC",
+    "track_changes": 1
+}
+

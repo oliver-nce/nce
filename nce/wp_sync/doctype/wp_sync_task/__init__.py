@@ -1,0 +1,2 @@
+# WP Sync Task DocType
+
