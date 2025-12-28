@@ -1,15 +1,16 @@
 # NCE Frappe App
 
-WordPress to Frappe data synchronization app.
+WordPress to Frappe data synchronization app via REST API.
 
 ## Overview
 
-This Frappe app syncs data from a WordPress/WooCommerce database to Frappe DocTypes. It supports:
+This Frappe app syncs data from WordPress tables to Frappe DocTypes using WordPress REST API. It supports:
 
-- **One-way sync** (WP → Frappe): Mirror WordPress tables in Frappe
+- **One-way sync** (WP → Frappe): Mirror WordPress tables in Frappe via REST API
 - **Bidirectional sync** (coming soon): Two-way synchronization with conflict resolution
 - **Scheduled sync**: Automatic synchronization via Frappe scheduler
 - **Manual sync**: On-demand sync via API or DocType actions
+- **WP Engine Compatible**: Works with WP Engine and shared hosting (no direct MySQL access needed)
 
 ## Installation
 
@@ -38,22 +39,29 @@ bench --site your-site.local migrate
 
 ## Configuration
 
-### 1. Configure WordPress Database Connection
+### 1. Install Custom SQL Endpoint Plugin on WordPress
+
+First, install the Custom SQL Endpoint plugin on your WordPress site:
+
+1. Upload `custom-sql-endpoint.php` to `wp-content/plugins/custom-sql-endpoint/`
+2. Activate the plugin in WordPress admin
+3. Create an Application Password for API authentication:
+   - Go to **Users** → **Your Profile** → **Application Passwords**
+   - Create a new application password (e.g., "Frappe Sync")
+   - Save the generated password (you'll need it for Frappe settings)
+
+### 2. Configure WordPress REST API Connection in Frappe
 
 1. Go to **WP Sync Settings** in Frappe
-2. Enter your WordPress database credentials:
-   - Database Host (external IP or hostname)
-   - Database Port (default: 3306)
-   - Database Name
-   - Database User
-   - Database Password
+2. Enter your WordPress API credentials:
+   - **WordPress Site URL**: Full URL (e.g., `https://yoursite.com`)
+   - **WordPress Username**: Your WordPress admin username
+   - **Application Password**: The password generated in step 1
 3. Click **Test Connection** to verify
 
-> **Important:** Your WordPress database must allow external connections. You may need to:
-> - Whitelist Frappe Cloud's IP addresses
-> - Create a read-only MySQL user for security
+> **Note:** The Custom SQL Endpoint plugin only allows SELECT and CALL queries for security.
 
-### 2. Create Sync Tasks
+### 3. Create Sync Tasks
 
 1. Go to **WP Sync Task** list
 2. Create a new task:
@@ -63,7 +71,7 @@ bench --site your-site.local migrate
    - **Field Mapping**: JSON mapping of WP columns to Frappe fields
    - **Execution Order**: Lower numbers run first
 
-### 3. Field Mapping Example
+### 4. Field Mapping Example
 
 ```json
 {
@@ -80,7 +88,7 @@ bench --site your-site.local migrate
 }
 ```
 
-### 4. Enable Scheduled Sync
+### 5. Enable Scheduled Sync
 
 1. In **WP Sync Settings**, check **Enable Scheduled Sync**
 2. The scheduler runs every 5 minutes (configurable in `hooks.py`)
@@ -89,7 +97,7 @@ bench --site your-site.local migrate
 
 | DocType | Purpose |
 |---------|---------|
-| **WP Sync Settings** | Global configuration (DB credentials, sync settings) |
+| **WP Sync Settings** | Global configuration (API credentials, sync settings) |
 | **WP Sync Task** | Individual sync task definitions |
 | **WP Sync Log** | Execution history and logs |
 | **WP Zoho Registration** | Mirror of `wp_zoho_registrations_new_site` |
@@ -184,30 +192,46 @@ scheduler_events = {
 
 ## Security Considerations
 
-1. **Database User**: Create a read-only MySQL user for WP → Frappe sync
-2. **IP Whitelisting**: Only allow connections from Frappe Cloud IPs
-3. **Encrypted Passwords**: Frappe stores the DB password encrypted
+1. **Application Passwords**: WordPress Application Passwords provide secure API access without exposing your main password
+2. **Read-Only Access**: The Custom SQL Endpoint plugin only allows SELECT and CALL queries, preventing data modification
+3. **WordPress Authentication**: All API requests use WordPress built-in authentication
+4. **Encrypted Passwords**: Frappe stores the application password encrypted
+5. **HTTPS Required**: Always use HTTPS for your WordPress site to secure API communications
 
 ## Troubleshooting
 
-### Connection Refused
-- Check if WordPress DB allows remote connections
-- Verify firewall rules
-- Ensure correct port (3306 is default)
+### Connection Failed / 401 Unauthorized
+- Verify your WordPress username is correct
+- Regenerate Application Password in WordPress
+- Ensure the plugin is activated
+- Check WordPress site URL is correct (include https://)
 
-### Permission Denied
-- Verify MySQL user has SELECT privileges on the tables
-- Check if user is allowed to connect from Frappe's IP
+### API Request Timeout
+- Check WordPress site is accessible
+- Verify firewall/security plugins aren't blocking API requests
+- Increase timeout in `wp_sync_settings.py` if needed
 
 ### No Data Syncing
 - Check WP Sync Task is enabled
 - Check WP Sync Settings has "Enable Scheduled Sync" checked
 - Review WP Sync Log for errors
+- Test query manually via API endpoint
+
+### SQL Query Error
+- Verify table name is correct (usually prefixed with `wp_`)
+- Check WHERE clause syntax if used
+- Remember only SELECT and CALL queries are allowed
 
 ## Version History
 
+- **0.0.2** (2025-12-28)
+  - Switched from direct MySQL to WordPress REST API
+  - Added support for WP Engine and shared hosting
+  - Updated to use WordPress Application Passwords
+  - Removed pymysql dependency, added requests library
+
 - **0.0.1** - Initial release
-  - WP → Frappe one-way sync
+  - WP → Frappe one-way sync via direct MySQL
   - Scheduled and manual sync
   - WP Zoho Registration mirror
 

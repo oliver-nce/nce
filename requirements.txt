@@ -1,5 +1,5 @@
 # NCE Frappe App Requirements
 # frappe is installed by bench, no need to list here
 
-pymysql>=1.0.0
+requests>=2.31.0
 

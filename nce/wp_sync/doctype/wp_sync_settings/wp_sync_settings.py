@@ -1,31 +1,36 @@
 """
 WP Sync Settings DocType Controller
 
-Handles WordPress database connection settings and testing.
+Handles WordPress REST API connection settings and testing.
 """
 
 import frappe
 from frappe.model.document import Document
+import requests
+from requests.auth import HTTPBasicAuth
 
 
 class WPSyncSettings(Document):
-    """Settings for WordPress database synchronization."""
+    """Settings for WordPress REST API synchronization."""
 
     def validate(self):
         """Validate settings before save."""
-        if self.wp_db_port and (self.wp_db_port < 1 or self.wp_db_port > 65535):
-            frappe.throw("Database port must be between 1 and 65535")
+        if self.wp_site_url:
+            # Ensure URL doesn't end with trailing slash
+            self.wp_site_url = self.wp_site_url.rstrip('/')
 
     @frappe.whitelist()
     def test_connection(self):
-        """Test the WordPress database connection."""
+        """Test the WordPress REST API connection."""
         try:
-            connection = get_wp_connection()
-            if connection:
-                connection.close()
+            # Test with a simple query
+            result = execute_wp_query("SELECT 1 as test")
+            if result and len(result) > 0:
                 self.connection_status = "Connected Successfully"
                 self.save()
                 return {"success": True, "message": "Connection successful!"}
+            else:
+                raise Exception("Empty response from API")
         except Exception as e:
             self.connection_status = f"Failed: {str(e)[:100]}"
             self.save()
@@ -37,33 +42,65 @@ def get_wp_settings():
     return frappe.get_single("WP Sync Settings")
 
 
-def get_wp_connection():
+def execute_wp_query(sql_query):
     """
-    Create a connection to the WordPress database.
+    Execute a SQL query via WordPress REST API.
+    
+    Args:
+        sql_query (str): SELECT or CALL SQL query to execute
     
     Returns:
-        pymysql.Connection: Database connection object
+        list: List of dictionaries with query results
     
     Raises:
-        Exception: If connection fails
+        Exception: If API call fails or returns error
     """
-    import pymysql
-
     settings = get_wp_settings()
 
-    if not settings.wp_db_host:
-        frappe.throw("WordPress database settings not configured")
+    if not settings.wp_site_url:
+        frappe.throw("WordPress REST API settings not configured")
 
-    connection = pymysql.connect(
-        host=settings.wp_db_host,
-        port=settings.wp_db_port or 3306,
-        user=settings.wp_db_user,
-        password=settings.get_password("wp_db_password"),
-        database=settings.wp_db_name,
-        charset="utf8mb4",
-        cursorclass=pymysql.cursors.DictCursor,
-        connect_timeout=10,
+    # Build endpoint URL
+    endpoint = f"{settings.wp_site_url}/wp-json/custom/v1/sql-query"
+
+    # Prepare authentication
+    auth = HTTPBasicAuth(
+        settings.wp_username,
+        settings.get_password("wp_app_password")
     )
 
-    return connection
+    # Prepare request payload
+    payload = {"sql": sql_query}
+
+    # Make API request
+    try:
+        response = requests.post(
+            endpoint,
+            json=payload,
+            auth=auth,
+            timeout=30,
+            headers={"Content-Type": "application/json"}
+        )
+
+        # Check for HTTP errors
+        response.raise_for_status()
+
+        # Parse JSON response
+        data = response.json()
+
+        # Check for WordPress error format
+        if isinstance(data, dict) and data.get("code"):
+            error_msg = data.get("message", "Unknown API error")
+            frappe.throw(f"WordPress API Error: {error_msg}")
+
+        # Extract result array
+        if isinstance(data, dict) and "result" in data:
+            return data["result"]
+        else:
+            frappe.throw(f"Unexpected API response format: {data}")
+
+    except requests.exceptions.RequestException as e:
+        frappe.throw(f"API request failed: {str(e)}")
+    except ValueError as e:
+        frappe.throw(f"Failed to parse API response: {str(e)}")
 

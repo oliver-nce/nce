@@ -5,12 +5,10 @@
     "engine": "InnoDB",
     "field_order": [
         "connection_section",
-        "wp_db_host",
-        "wp_db_port",
-        "wp_db_name",
+        "wp_site_url",
+        "wp_username",
         "column_break_conn",
-        "wp_db_user",
-        "wp_db_password",
+        "wp_app_password",
         "sync_settings_section",
         "sync_enabled",
         "sync_interval_minutes",
@@ -24,44 +22,32 @@
         {
             "fieldname": "connection_section",
             "fieldtype": "Section Break",
-            "label": "WordPress Database Connection"
+            "label": "WordPress REST API Connection"
         },
         {
-            "fieldname": "wp_db_host",
+            "fieldname": "wp_site_url",
             "fieldtype": "Data",
-            "label": "Database Host",
+            "label": "WordPress Site URL",
             "reqd": 1,
-            "description": "MySQL/MariaDB host (e.g., localhost or IP address)"
+            "description": "Full WordPress site URL (e.g., https://yoursite.com)"
         },
         {
-            "fieldname": "wp_db_port",
-            "fieldtype": "Int",
-            "label": "Database Port",
-            "default": "3306",
-            "reqd": 1
-        },
-        {
-            "fieldname": "wp_db_name",
+            "fieldname": "wp_username",
             "fieldtype": "Data",
-            "label": "Database Name",
+            "label": "WordPress Username",
             "reqd": 1,
-            "description": "WordPress database name"
+            "description": "WordPress admin or user with read permissions"
         },
         {
             "fieldname": "column_break_conn",
             "fieldtype": "Column Break"
         },
         {
-            "fieldname": "wp_db_user",
-            "fieldtype": "Data",
-            "label": "Database User",
-            "reqd": 1
-        },
-        {
-            "fieldname": "wp_db_password",
+            "fieldname": "wp_app_password",
             "fieldtype": "Password",
-            "label": "Database Password",
-            "reqd": 1
+            "label": "Application Password",
+            "reqd": 1,
+            "description": "WordPress Application Password (Users > Your Profile > Application Passwords)"
         },
         {
             "fieldname": "sync_settings_section",
