@@ -60,7 +60,10 @@ frappe.ui.form.on('WP Sync Task', {
                             });
                             // Auto-fill the target_doctype field
                             frm.set_value('target_doctype', r.message.doctype_name);
-                            frm.save();
+                            // Only auto-save if document already exists
+                            if (!frm.is_new()) {
+                                frm.save();
+                            }
                         } else if (r.message && r.message.exists) {
                             frappe.msgprint({
                                 title: __('DocType Already Exists'),

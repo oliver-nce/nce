@@ -78,8 +78,8 @@
             "fieldtype": "Link",
             "label": "Target DocType",
             "options": "DocType",
-            "reqd": 1,
-            "description": "Frappe DocType to sync into"
+            "reqd": 0,
+            "description": "Frappe DocType to sync into (auto-filled by Create Mirror DocType button)"
         },
         {
             "fieldname": "description",
