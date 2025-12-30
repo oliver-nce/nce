@@ -291,7 +291,8 @@ def sync_wp_to_frappe(task):
                         if value is not None:
                             values[frappe_field] = value
 
-                # Set tracking timestamp
+                # Set tracking fields
+                values["track_source_table"] = task.source_table
                 values["track_last_synced"] = now_datetime()
 
                 if existing:
