@@ -266,6 +266,7 @@ def generate_doctype_from_wp_table(table_name, columns, doctype_name=None):
         "doctype": "DocType",
         "name": doctype_name,
         "module": "WP Sync",
+        "custom": 1,
         "naming_rule": "Expression",
         "autoname": f"WP-{table_name[:10].upper()}-" + ".#####",
         "title_field": "track_record_id",
