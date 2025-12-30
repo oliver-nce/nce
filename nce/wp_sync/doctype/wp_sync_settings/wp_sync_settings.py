@@ -79,7 +79,10 @@ def execute_wp_query(sql_query):
             json=payload,
             auth=auth,
             timeout=30,
-            headers={"Content-Type": "application/json"}
+            headers={
+                "Content-Type": "application/json",
+                "User-Agent": "curl/8.7.1"  # Mimic curl user agent
+            }
         )
 
         # Check for HTTP errors
