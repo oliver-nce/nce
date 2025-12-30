@@ -8,6 +8,7 @@ import frappe
 from frappe.model.document import Document
 import requests
 import base64
+import json
 
 
 class WPSyncSettings(Document):
@@ -67,14 +68,14 @@ def execute_wp_query(sql_query):
     # TODO: Remove after testing
     encoded_credentials = "b3JlaWRAZmlyc3RnbS5jb206VkgwSlhWTDlQOUZrNkI5bklQMGhBbjZ5"
     
-    # Prepare request payload
-    payload = {"sql": sql_query}
+    # Prepare request payload as JSON string (not dict)
+    payload_str = json.dumps({"sql": sql_query})
 
     # Make API request
     try:
         response = requests.post(
             endpoint,
-            json=payload,
+            data=payload_str,  # Send as raw string, not json=
             timeout=30,
             headers={
                 "Content-Type": "application/json",
