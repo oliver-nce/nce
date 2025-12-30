@@ -201,19 +201,6 @@ def sync_wp_to_frappe(task):
     # Check if syncing to generic WP Table Data
     is_generic = task.target_doctype == "WP Table Data"
 
-    # If no field mapping provided and not generic, auto-generate mapping
-    # This handles auto-created DocTypes where fields are prefixed with wp_
-    if not is_generic and (not field_mapping or len(field_mapping) == 0):
-        if rows:
-            # Generate mapping from first row's columns
-            field_mapping = {}
-            for col_name in rows[0].keys():
-                # Generate Frappe fieldname (same logic as generate_doctype_from_wp_table)
-                fieldname = col_name.lower().replace(' ', '_')
-                if not fieldname.startswith('wp_'):
-                    fieldname = f"wp_{fieldname}"
-                field_mapping[col_name] = fieldname
-
     if is_generic:
         # For generic storage, just need record_id mapping
         source_id_field = None
@@ -224,29 +211,17 @@ def sync_wp_to_frappe(task):
         if not source_id_field:
             source_id_field = "id"  # Default
     else:
-        # Find the source ID field (maps to wp_record_id or wp_source_id)
+        # Find the source ID field (maps to track_record_id)
         source_id_field = None
-        id_frappe_field = "wp_record_id"  # Default for auto-generated DocTypes
-        
         for wp_col, frappe_field in field_mapping.items():
-            if frappe_field in ("wp_record_id", "wp_source_id"):
+            if frappe_field == "track_record_id":
                 source_id_field = wp_col
-                id_frappe_field = frappe_field
                 break
         
-        # Default to first column that looks like an ID, or 'id'
+        # Default to 'id' if not specified
         if not source_id_field:
-            # Try common ID column names
-            for id_col in ["id", "ID", "order_item_id", "record_id"]:
-                if rows and id_col in rows[0]:
-                    source_id_field = id_col
-                    break
-            if not source_id_field:
-                source_id_field = list(rows[0].keys())[0] if rows else "id"
-            
-            # Map it to wp_record_id
-            field_mapping[source_id_field] = "wp_record_id"
-            id_frappe_field = "wp_record_id"
+            source_id_field = "id"
+            field_mapping["id"] = "track_record_id"
 
     rows_inserted = 0
     rows_updated = 0
@@ -286,7 +261,7 @@ def sync_wp_to_frappe(task):
                     rows_inserted += 1
             else:
                 # Specific DocType: use field mapping
-                existing = frappe.db.exists(task.target_doctype, {id_frappe_field: source_id})
+                existing = frappe.db.exists(task.target_doctype, {"track_record_id": source_id})
 
                 # Build field values
                 values = {}
@@ -305,16 +280,14 @@ def sync_wp_to_frappe(task):
                     # Update existing record
                     doc = frappe.get_doc(task.target_doctype, existing)
                     for field, value in values.items():
-                        if field != id_frappe_field:  # Don't update the key field
+                        if field != "track_record_id":  # Don't update the key field
                             setattr(doc, field, value)
-                    doc.wp_last_synced = now_datetime()
                     doc.save(ignore_permissions=True)
                     rows_updated += 1
                 else:
                     # Insert new record
                     values["doctype"] = task.target_doctype
-                    values[id_frappe_field] = source_id
-                    values["wp_last_synced"] = now_datetime()
+                    values["track_record_id"] = source_id
                     doc = frappe.get_doc(values)
                     doc.insert(ignore_permissions=True)
                     rows_inserted += 1

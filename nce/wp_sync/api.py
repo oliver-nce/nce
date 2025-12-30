@@ -150,25 +150,25 @@ def generate_doctype_from_wp_table(table_name, columns, doctype_name=None):
     
     # Add source table reference field (hidden, for tracking)
     fields.append({
-        "fieldname": "wp_source_table",
+        "fieldname": "track_source_table",
         "fieldtype": "Data",
         "label": "Source Table",
         "default": table_name,
         "read_only": 1,
         "hidden": 1
     })
-    field_order.append("wp_source_table")
+    field_order.append("track_source_table")
     
     # Add source record ID field (for linking back to WP)
     fields.append({
-        "fieldname": "wp_record_id",
+        "fieldname": "track_record_id",
         "fieldtype": "Data",
-        "label": "WP Record ID",
+        "label": "Record ID",
         "read_only": 1,
         "in_list_view": 1,
         "in_standard_filter": 1
     })
-    field_order.append("wp_record_id")
+    field_order.append("track_record_id")
     
     # Add column break
     fields.append({
@@ -179,12 +179,12 @@ def generate_doctype_from_wp_table(table_name, columns, doctype_name=None):
     
     # Add last synced timestamp
     fields.append({
-        "fieldname": "wp_last_synced",
+        "fieldname": "track_last_synced",
         "fieldtype": "Datetime",
         "label": "Last Synced",
         "read_only": 1
     })
-    field_order.append("wp_last_synced")
+    field_order.append("track_last_synced")
     
     # Add section break for WordPress columns
     fields.append({
@@ -209,11 +209,8 @@ def generate_doctype_from_wp_table(table_name, columns, doctype_name=None):
         if not col_name:
             continue
         
-        # Generate fieldname (lowercase, underscores)
+        # Generate fieldname (lowercase, underscores) - keep same as WP column name
         fieldname = col_name.lower().replace(' ', '_')
-        # Prefix with wp_ to avoid conflicts with Frappe system fields
-        if not fieldname.startswith('wp_'):
-            fieldname = f"wp_{fieldname}"
         
         # Get Frappe fieldtype
         fieldtype = mysql_type_to_frappe_fieldtype(col_type)
@@ -269,10 +266,9 @@ def generate_doctype_from_wp_table(table_name, columns, doctype_name=None):
         "doctype": "DocType",
         "name": doctype_name,
         "module": "WP Sync",
-        "custom": 1,
         "naming_rule": "Expression",
         "autoname": f"WP-{table_name[:10].upper()}-" + ".#####",
-        "title_field": "wp_record_id",
+        "title_field": "track_record_id",
         "engine": "InnoDB",
         "is_submittable": 0,
         "istable": 0,
@@ -412,8 +408,6 @@ def sync_doctype_schema(table_name, doctype_name):
         
         # Generate fieldname (same logic as generate_doctype_from_wp_table)
         fieldname = col_name.lower().replace(' ', '_')
-        if not fieldname.startswith('wp_'):
-            fieldname = f"wp_{fieldname}"
         
         # Check if field exists
         if fieldname not in existing_fieldnames:
