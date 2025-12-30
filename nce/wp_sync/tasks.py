@@ -207,7 +207,8 @@ def sync_wp_to_frappe(task):
         field_mapping = {}
         for col_name in rows[0].keys():
             # Frappe field name is lowercase with underscores (same as WP column)
-            frappe_fieldname = col_name.lower().replace(' ', '_')
+            # Keep original case - just replace spaces with underscores
+            frappe_fieldname = col_name.replace(' ', '_')
             field_mapping[col_name] = frappe_fieldname
 
     if is_generic:

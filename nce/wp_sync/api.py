@@ -210,7 +210,8 @@ def generate_doctype_from_wp_table(table_name, columns, doctype_name=None):
             continue
         
         # Generate fieldname (lowercase, underscores) - keep same as WP column name
-        fieldname = col_name.lower().replace(' ', '_')
+        # Keep original case - just replace spaces with underscores
+        fieldname = col_name.replace(' ', '_')
         
         # Get Frappe fieldtype
         fieldtype = mysql_type_to_frappe_fieldtype(col_type)
@@ -408,7 +409,8 @@ def sync_doctype_schema(table_name, doctype_name):
             continue
         
         # Generate fieldname (same logic as generate_doctype_from_wp_table)
-        fieldname = col_name.lower().replace(' ', '_')
+        # Keep original case - just replace spaces with underscores
+        fieldname = col_name.replace(' ', '_')
         
         # Check if field exists
         if fieldname not in existing_fieldnames:
