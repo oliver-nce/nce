@@ -51,6 +51,39 @@ def run_task(task_name):
 
 
 @frappe.whitelist()
+def run_multiple_tasks(task_names):
+    """
+    Manually trigger multiple sync tasks.
+
+    Args:
+        task_names: List of WP Sync Task names (JSON array)
+
+    Returns:
+        dict: Results from all tasks
+    """
+    from nce.wp_sync.tasks import run_single_task
+    import json
+
+    frappe.only_for("System Manager")
+    
+    # Parse task names if passed as JSON string
+    if isinstance(task_names, str):
+        task_names = json.loads(task_names)
+    
+    results = []
+    for task_name in task_names:
+        if frappe.db.exists("WP Sync Task", task_name):
+            result = run_single_task(task_name)
+            results.append(result)
+    
+    return {
+        "success": True,
+        "tasks_run": len(results),
+        "results": results
+    }
+
+
+@frappe.whitelist()
 def test_wp_connection():
     """
     Test the WordPress database connection.
