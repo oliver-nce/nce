@@ -250,29 +250,30 @@ def sync_wp_to_frappe(task):
     # Batch size for commits
     BATCH_SIZE = 500
     
-    # Pre-fetch existing record IDs in one query (optimization)
+    # Pre-fetch existing record IDs → names mapping (optimization)
+    # This avoids individual get_value() calls during updates
     if not is_generic:
-        existing_ids = set()
+        existing_map = {}  # {track_record_id: name}
         existing_records = frappe.get_all(
             task.target_doctype,
-            fields=["track_record_id"],
+            fields=["name", "track_record_id"],
             limit=0  # No limit
         )
         for rec in existing_records:
             if rec.track_record_id:
-                existing_ids.add(str(rec.track_record_id))
+                existing_map[str(rec.track_record_id)] = rec.name
     else:
         # For generic, fetch table_name + record_id combinations
-        existing_ids = set()
+        existing_map = {}  # {record_id: name}
         existing_records = frappe.get_all(
             task.target_doctype,
             filters={"table_name": task.source_table},
-            fields=["record_id"],
+            fields=["name", "record_id"],
             limit=0
         )
         for rec in existing_records:
             if rec.record_id:
-                existing_ids.add(str(rec.record_id))
+                existing_map[str(rec.record_id)] = rec.name
     
     batch_count = 0
     
@@ -285,15 +286,10 @@ def sync_wp_to_frappe(task):
 
             if is_generic:
                 # Generic WP Table Data: use table_name + record_id as unique key
-                is_existing = source_id in existing_ids
+                existing_name = existing_map.get(source_id)
                 
-                if is_existing:
+                if existing_name:
                     # Update existing record
-                    existing_name = frappe.db.get_value(
-                        task.target_doctype,
-                        {"table_name": task.source_table, "record_id": source_id},
-                        "name"
-                    )
                     doc = frappe.get_doc(task.target_doctype, existing_name)
                     doc.data = row  # Store all data in JSON field
                     doc.synced_at = now_datetime()
@@ -309,11 +305,11 @@ def sync_wp_to_frappe(task):
                         "synced_at": now_datetime()
                     })
                     doc.insert(ignore_permissions=True)
-                    existing_ids.add(source_id)  # Track for subsequent rows
+                    existing_map[source_id] = doc.name  # Track for subsequent rows
                     rows_inserted += 1
             else:
-                # Specific DocType: use pre-fetched existing IDs
-                is_existing = source_id in existing_ids
+                # Specific DocType: use pre-fetched existing map
+                existing_name = existing_map.get(source_id)
 
                 # Build field values
                 values = {}
@@ -328,13 +324,8 @@ def sync_wp_to_frappe(task):
                 values["track_source_table"] = task.source_table
                 values["track_last_synced"] = now_datetime()
 
-                if is_existing:
-                    # Update existing record
-                    existing_name = frappe.db.get_value(
-                        task.target_doctype,
-                        {"track_record_id": source_id},
-                        "name"
-                    )
+                if existing_name:
+                    # Update existing record (no extra get_value needed!)
                     doc = frappe.get_doc(task.target_doctype, existing_name)
                     for field, value in values.items():
                         if field != "track_record_id":  # Don't update the key field
@@ -347,7 +338,7 @@ def sync_wp_to_frappe(task):
                     values["track_record_id"] = source_id
                     doc = frappe.get_doc(values)
                     doc.insert(ignore_permissions=True)
-                    existing_ids.add(source_id)  # Track for subsequent rows
+                    existing_map[source_id] = doc.name  # Track for subsequent rows
                     rows_inserted += 1
 
             # Commit in batches
