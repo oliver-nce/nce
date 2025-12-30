@@ -7,7 +7,7 @@ Handles WordPress REST API connection settings and testing.
 import frappe
 from frappe.model.document import Document
 import requests
-from requests.auth import HTTPBasicAuth
+import base64
 
 
 class WPSyncSettings(Document):
@@ -63,12 +63,12 @@ def execute_wp_query(sql_query):
     # Build endpoint URL
     endpoint = f"{settings.wp_site_url}/wp-json/custom/v1/sql-query"
 
-    # Prepare authentication
-    auth = HTTPBasicAuth(
-        settings.wp_username,
-        settings.get_password("wp_app_password")
-    )
-
+    # Manually construct Basic Auth header (same as curl)
+    username = settings.wp_username
+    password = settings.get_password("wp_app_password")
+    credentials = f"{username}:{password}"
+    encoded_credentials = base64.b64encode(credentials.encode()).decode()
+    
     # Prepare request payload
     payload = {"sql": sql_query}
 
@@ -77,12 +77,14 @@ def execute_wp_query(sql_query):
         response = requests.post(
             endpoint,
             json=payload,
-            auth=auth,
             timeout=30,
             headers={
                 "Content-Type": "application/json",
-                "User-Agent": "curl/8.7.1"  # Mimic curl user agent
-            }
+                "User-Agent": "curl/8.7.1",
+                "Accept": "*/*",
+                "Authorization": f"Basic {encoded_credentials}"
+            },
+            verify=True
         )
 
         # Check for HTTP errors
