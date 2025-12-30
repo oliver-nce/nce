@@ -21,7 +21,9 @@
         "last_run_status",
         "column_break_status",
         "rows_synced",
-        "last_error"
+        "last_error",
+        "actions_section",
+        "run_now_button"
     ],
     "fields": [
         {
@@ -127,6 +129,16 @@
             "fieldtype": "Small Text",
             "label": "Last Error",
             "read_only": 1
+        },
+        {
+            "fieldname": "actions_section",
+            "fieldtype": "Section Break",
+            "label": "Actions"
+        },
+        {
+            "fieldname": "run_now_button",
+            "fieldtype": "Button",
+            "label": "Run Sync Now"
         }
     ],
     "links": [],
