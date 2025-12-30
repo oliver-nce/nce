@@ -246,7 +246,36 @@ def sync_wp_to_frappe(task):
     rows_inserted = 0
     rows_updated = 0
     rows_skipped = 0
-
+    
+    # Batch size for commits
+    BATCH_SIZE = 500
+    
+    # Pre-fetch existing record IDs in one query (optimization)
+    if not is_generic:
+        existing_ids = set()
+        existing_records = frappe.get_all(
+            task.target_doctype,
+            fields=["track_record_id"],
+            limit=0  # No limit
+        )
+        for rec in existing_records:
+            if rec.track_record_id:
+                existing_ids.add(str(rec.track_record_id))
+    else:
+        # For generic, fetch table_name + record_id combinations
+        existing_ids = set()
+        existing_records = frappe.get_all(
+            task.target_doctype,
+            filters={"table_name": task.source_table},
+            fields=["record_id"],
+            limit=0
+        )
+        for rec in existing_records:
+            if rec.record_id:
+                existing_ids.add(str(rec.record_id))
+    
+    batch_count = 0
+    
     for row in rows:
         try:
             source_id = str(row.get(source_id_field))
@@ -256,14 +285,16 @@ def sync_wp_to_frappe(task):
 
             if is_generic:
                 # Generic WP Table Data: use table_name + record_id as unique key
-                existing = frappe.db.exists(task.target_doctype, {
-                    "table_name": task.source_table,
-                    "record_id": source_id
-                })
+                is_existing = source_id in existing_ids
                 
-                if existing:
+                if is_existing:
                     # Update existing record
-                    doc = frappe.get_doc(task.target_doctype, existing)
+                    existing_name = frappe.db.get_value(
+                        task.target_doctype,
+                        {"table_name": task.source_table, "record_id": source_id},
+                        "name"
+                    )
+                    doc = frappe.get_doc(task.target_doctype, existing_name)
                     doc.data = row  # Store all data in JSON field
                     doc.synced_at = now_datetime()
                     doc.save(ignore_permissions=True)
@@ -278,10 +309,11 @@ def sync_wp_to_frappe(task):
                         "synced_at": now_datetime()
                     })
                     doc.insert(ignore_permissions=True)
+                    existing_ids.add(source_id)  # Track for subsequent rows
                     rows_inserted += 1
             else:
-                # Specific DocType: use field mapping
-                existing = frappe.db.exists(task.target_doctype, {"track_record_id": source_id})
+                # Specific DocType: use pre-fetched existing IDs
+                is_existing = source_id in existing_ids
 
                 # Build field values
                 values = {}
@@ -296,9 +328,14 @@ def sync_wp_to_frappe(task):
                 values["track_source_table"] = task.source_table
                 values["track_last_synced"] = now_datetime()
 
-                if existing:
+                if is_existing:
                     # Update existing record
-                    doc = frappe.get_doc(task.target_doctype, existing)
+                    existing_name = frappe.db.get_value(
+                        task.target_doctype,
+                        {"track_record_id": source_id},
+                        "name"
+                    )
+                    doc = frappe.get_doc(task.target_doctype, existing_name)
                     for field, value in values.items():
                         if field != "track_record_id":  # Don't update the key field
                             setattr(doc, field, value)
@@ -310,12 +347,20 @@ def sync_wp_to_frappe(task):
                     values["track_record_id"] = source_id
                     doc = frappe.get_doc(values)
                     doc.insert(ignore_permissions=True)
+                    existing_ids.add(source_id)  # Track for subsequent rows
                     rows_inserted += 1
+
+            # Commit in batches
+            batch_count += 1
+            if batch_count >= BATCH_SIZE:
+                frappe.db.commit()
+                batch_count = 0
 
         except Exception as e:
             frappe.log_error(f"Error syncing row {row}: {str(e)}", "WP Sync Row Error")
             rows_skipped += 1
 
+    # Final commit for remaining records
     frappe.db.commit()
 
     return {
