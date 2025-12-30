@@ -64,11 +64,13 @@ def execute_wp_query(sql_query):
     # Build endpoint URL
     endpoint = f"{settings.wp_site_url}/wp-json/custom/v1/sql-query"
 
-    # TEMPORARY: Use exact credentials from curl that works
-    # TODO: Remove after testing
-    encoded_credentials = "b3JlaWRAZmlyc3RnbS5jb206VkgwSlhWTDlQOUZrNkI5bklQMGhBbjZ5"
+    # Build Basic Auth header
+    username = settings.wp_username
+    password = settings.get_password("wp_app_password")
+    credentials = f"{username}:{password}"
+    encoded_credentials = base64.b64encode(credentials.encode()).decode()
     
-    # Prepare request payload as JSON string (not dict)
+    # Prepare request payload as JSON string
     payload_str = json.dumps({"sql": sql_query})
 
     # Make API request
