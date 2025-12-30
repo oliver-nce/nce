@@ -133,22 +133,30 @@ def sync_wp_to_frappe(task):
     # Get field mapping
     field_mapping = task.get_field_mapping()
 
-    # If no mapping provided, try to auto-map (column names to field names)
-    if not field_mapping:
-        # Use column names as-is (assuming they match Frappe field names)
-        field_mapping = {col: col for col in rows[0].keys()}
+    # Check if syncing to generic WP Table Data
+    is_generic = task.target_doctype == "WP Table Data"
 
-    # Find the source ID field (maps to wp_source_id)
-    source_id_field = None
-    for wp_col, frappe_field in field_mapping.items():
-        if frappe_field == "wp_source_id":
-            source_id_field = wp_col
-            break
-
-    # Default to 'id' if not specified
-    if not source_id_field:
-        source_id_field = "id"
-        field_mapping["id"] = "wp_source_id"
+    if is_generic:
+        # For generic storage, just need record_id mapping
+        source_id_field = None
+        for wp_col, frappe_field in field_mapping.items():
+            if frappe_field == "record_id":
+                source_id_field = wp_col
+                break
+        if not source_id_field:
+            source_id_field = "id"  # Default
+    else:
+        # Find the source ID field (maps to wp_source_id)
+        source_id_field = None
+        for wp_col, frappe_field in field_mapping.items():
+            if frappe_field == "wp_source_id":
+                source_id_field = wp_col
+                break
+        
+        # Default to 'id' if not specified
+        if not source_id_field:
+            source_id_field = "id"
+            field_mapping["id"] = "wp_source_id"
 
     rows_inserted = 0
     rows_updated = 0
@@ -161,37 +169,63 @@ def sync_wp_to_frappe(task):
                 rows_skipped += 1
                 continue
 
-            # Check if record exists
-            existing = frappe.db.exists(task.target_doctype, {"wp_source_id": source_id})
-
-            # Build field values
-            values = {}
-            for wp_col, frappe_field in field_mapping.items():
-                if wp_col in row:
-                    value = row[wp_col]
-                    # Handle None values
-                    if value is not None:
-                        values[frappe_field] = value
-
-            # Store raw data for debugging
-            values["raw_data"] = json.dumps(row, default=str)
-            values["synced_at"] = now_datetime()
-
-            if existing:
-                # Update existing record
-                doc = frappe.get_doc(task.target_doctype, existing)
-                for field, value in values.items():
-                    if field != "wp_source_id":  # Don't update the key field
-                        setattr(doc, field, value)
-                doc.save(ignore_permissions=True)
-                rows_updated += 1
+            if is_generic:
+                # Generic WP Table Data: use table_name + record_id as unique key
+                existing = frappe.db.exists(task.target_doctype, {
+                    "table_name": task.source_table,
+                    "record_id": source_id
+                })
+                
+                if existing:
+                    # Update existing record
+                    doc = frappe.get_doc(task.target_doctype, existing)
+                    doc.data = row  # Store all data in JSON field
+                    doc.synced_at = now_datetime()
+                    doc.save(ignore_permissions=True)
+                    rows_updated += 1
+                else:
+                    # Insert new record
+                    doc = frappe.get_doc({
+                        "doctype": task.target_doctype,
+                        "table_name": task.source_table,
+                        "record_id": source_id,
+                        "data": row,  # All WordPress columns as JSON
+                        "synced_at": now_datetime()
+                    })
+                    doc.insert(ignore_permissions=True)
+                    rows_inserted += 1
             else:
-                # Insert new record
-                values["doctype"] = task.target_doctype
-                values["wp_source_id"] = source_id
-                doc = frappe.get_doc(values)
-                doc.insert(ignore_permissions=True)
-                rows_inserted += 1
+                # Specific DocType: use field mapping
+                existing = frappe.db.exists(task.target_doctype, {"wp_source_id": source_id})
+
+                # Build field values
+                values = {}
+                for wp_col, frappe_field in field_mapping.items():
+                    if wp_col in row:
+                        value = row[wp_col]
+                        # Handle None values
+                        if value is not None:
+                            values[frappe_field] = value
+
+                # Store raw data for debugging
+                values["raw_data"] = json.dumps(row, default=str)
+                values["synced_at"] = now_datetime()
+
+                if existing:
+                    # Update existing record
+                    doc = frappe.get_doc(task.target_doctype, existing)
+                    for field, value in values.items():
+                        if field != "wp_source_id":  # Don't update the key field
+                            setattr(doc, field, value)
+                    doc.save(ignore_permissions=True)
+                    rows_updated += 1
+                else:
+                    # Insert new record
+                    values["doctype"] = task.target_doctype
+                    values["wp_source_id"] = source_id
+                    doc = frappe.get_doc(values)
+                    doc.insert(ignore_permissions=True)
+                    rows_inserted += 1
 
         except Exception as e:
             frappe.log_error(f"Error syncing row {row}: {str(e)}", "WP Sync Row Error")
