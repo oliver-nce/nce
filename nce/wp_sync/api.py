@@ -335,14 +335,16 @@ def create_mirror_doctype(table_name, doctype_name=None):
     doctype_def = generate_doctype_from_wp_table(table_name, columns, doctype_name)
     final_doctype_name = doctype_def.get("name")
     
-    # Step 3: Check if DocType already exists
+    # Step 3: Drop existing DocType and table if they exist
     if frappe.db.exists("DocType", final_doctype_name):
-        return {
-            "success": False,
-            "message": f"DocType '{final_doctype_name}' already exists",
-            "doctype_name": final_doctype_name,
-            "exists": True
-        }
+        # Delete the DocType
+        frappe.delete_doc("DocType", final_doctype_name, force=True, ignore_permissions=True)
+        frappe.db.commit()
+    
+    # Drop the underlying table if it exists (in case DocType was deleted but table remains)
+    table_name_sql = f"tab{final_doctype_name}"
+    frappe.db.sql_ddl(f"DROP TABLE IF EXISTS `{table_name_sql}`")
+    frappe.db.commit()
     
     # Step 4: Create the DocType
     try:
