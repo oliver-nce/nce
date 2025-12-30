@@ -201,6 +201,15 @@ def sync_wp_to_frappe(task):
     # Check if syncing to generic WP Table Data
     is_generic = task.target_doctype == "WP Table Data"
 
+    # Auto-generate field mapping if not provided (for auto-created DocTypes)
+    # Maps WP column names directly to lowercase Frappe field names
+    if not is_generic and (not field_mapping or len(field_mapping) == 0) and rows:
+        field_mapping = {}
+        for col_name in rows[0].keys():
+            # Frappe field name is lowercase with underscores (same as WP column)
+            frappe_fieldname = col_name.lower().replace(' ', '_')
+            field_mapping[col_name] = frappe_fieldname
+
     if is_generic:
         # For generic storage, just need record_id mapping
         source_id_field = None
@@ -218,10 +227,20 @@ def sync_wp_to_frappe(task):
                 source_id_field = wp_col
                 break
         
-        # Default to 'id' if not specified
-        if not source_id_field:
-            source_id_field = "id"
-            field_mapping["id"] = "track_record_id"
+        # If not explicitly mapped, find a suitable ID column
+        if not source_id_field and rows:
+            row_keys = list(rows[0].keys())
+            # Try common ID column patterns
+            for col in row_keys:
+                col_lower = col.lower()
+                if col_lower == 'id' or col_lower.endswith('_id'):
+                    source_id_field = col
+                    break
+            # Fallback to first column
+            if not source_id_field:
+                source_id_field = row_keys[0]
+            
+            field_mapping[source_id_field] = "track_record_id"
 
     rows_inserted = 0
     rows_updated = 0
@@ -272,9 +291,8 @@ def sync_wp_to_frappe(task):
                         if value is not None:
                             values[frappe_field] = value
 
-                # Store raw data for debugging
-                values["raw_data"] = json.dumps(row, default=str)
-                values["synced_at"] = now_datetime()
+                # Set tracking timestamp
+                values["track_last_synced"] = now_datetime()
 
                 if existing:
                     # Update existing record
