@@ -6,10 +6,51 @@ Scheduled and on-demand sync tasks for WordPress → Frappe data synchronization
 
 import json
 import frappe
-from frappe.utils import now_datetime
+from frappe.utils import now_datetime, add_to_date, get_datetime
 
 from nce.wp_sync.doctype.wp_sync_settings.wp_sync_settings import execute_wp_query, get_wp_settings
 from nce.wp_sync.doctype.wp_sync_log.wp_sync_log import create_sync_log
+
+
+def build_incremental_where_clause(task):
+    """
+    Build WHERE clause for incremental sync based on updated_at field.
+    
+    Args:
+        task: WP Sync Task document
+    
+    Returns:
+        str: WHERE clause condition or empty string
+    """
+    # Check if incremental sync is enabled and configured
+    if not task.use_incremental_sync:
+        return ""
+    
+    if not task.updated_at_field:
+        return ""
+    
+    if not task.last_run_at:
+        # First run - no incremental filter
+        return ""
+    
+    # Calculate cutoff time with buffer
+    buffer_minutes = task.sync_buffer_minutes or 3
+    cutoff_time = add_to_date(task.last_run_at, minutes=-buffer_minutes)
+    
+    # Format timestamp for SQL
+    # Handle timezone - if WordPress stores in UTC, we use UTC
+    # If WordPress uses local time, we need to convert
+    if task.updated_at_timezone == "UTC":
+        # Format as UTC timestamp
+        cutoff_str = cutoff_time.strftime("%Y-%m-%d %H:%M:%S")
+    else:
+        # Server local time - use as-is
+        cutoff_str = cutoff_time.strftime("%Y-%m-%d %H:%M:%S")
+    
+    # Build the condition
+    condition = f"{task.updated_at_field} >= '{cutoff_str}'"
+    
+    return condition
 
 
 def run_scheduled_sync():
@@ -119,10 +160,34 @@ def sync_wp_to_frappe(task):
     Returns:
         dict: Result with counts
     """
+    # First, sync schema - add any new columns from WP to DocType
+    # Skip for generic WP Table Data (uses JSON field)
+    if task.target_doctype != "WP Table Data":
+        from nce.wp_sync.api import sync_doctype_schema
+        schema_result = sync_doctype_schema(task.source_table, task.target_doctype)
+        if schema_result.get("fields_added", 0) > 0:
+            frappe.logger().info(
+                f"WP Sync: Added {schema_result['fields_added']} new field(s) to {task.target_doctype}"
+            )
+    
     # Build query
     query = f"SELECT * FROM {task.source_table}"
+    
+    # Collect WHERE conditions
+    where_conditions = []
+    
+    # Add user-defined WHERE clause
     if task.where_clause:
-        query += f" WHERE {task.where_clause}"
+        where_conditions.append(f"({task.where_clause})")
+    
+    # Add incremental sync condition
+    incremental_condition = build_incremental_where_clause(task)
+    if incremental_condition:
+        where_conditions.append(f"({incremental_condition})")
+    
+    # Combine conditions
+    if where_conditions:
+        query += " WHERE " + " AND ".join(where_conditions)
 
     # Execute query via REST API
     rows = execute_wp_query(query)

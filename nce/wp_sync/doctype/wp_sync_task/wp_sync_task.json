@@ -16,6 +16,12 @@
         "mapping_section",
         "field_mapping",
         "where_clause",
+        "incremental_sync_section",
+        "updated_at_field",
+        "updated_at_timezone",
+        "column_break_incremental",
+        "sync_buffer_minutes",
+        "use_incremental_sync",
         "status_section",
         "last_run_at",
         "last_run_status",
@@ -23,7 +29,8 @@
         "rows_synced",
         "last_error",
         "actions_section",
-        "run_now_button"
+        "run_now_button",
+        "create_mirror_doctype_button"
     ],
     "fields": [
         {
@@ -97,6 +104,47 @@
             "description": "SQL WHERE clause to filter source data (without 'WHERE' keyword)"
         },
         {
+            "fieldname": "incremental_sync_section",
+            "fieldtype": "Section Break",
+            "label": "Incremental Sync Settings",
+            "collapsible": 1
+        },
+        {
+            "fieldname": "use_incremental_sync",
+            "fieldtype": "Check",
+            "label": "Use Incremental Sync",
+            "default": "1",
+            "description": "Only sync records updated since last run (requires updated_at field)"
+        },
+        {
+            "fieldname": "updated_at_field",
+            "fieldtype": "Data",
+            "label": "Updated At Field",
+            "description": "Column name in WordPress table that stores the last updated timestamp (e.g., updated_at, modified_date)",
+            "depends_on": "eval:doc.use_incremental_sync"
+        },
+        {
+            "fieldname": "updated_at_timezone",
+            "fieldtype": "Select",
+            "label": "Timestamp Timezone",
+            "options": "UTC\nServer Local Time",
+            "default": "UTC",
+            "description": "Timezone of the updated_at timestamps in WordPress",
+            "depends_on": "eval:doc.use_incremental_sync"
+        },
+        {
+            "fieldname": "column_break_incremental",
+            "fieldtype": "Column Break"
+        },
+        {
+            "fieldname": "sync_buffer_minutes",
+            "fieldtype": "Int",
+            "label": "Sync Buffer (Minutes)",
+            "default": "3",
+            "description": "Look back this many minutes to catch records updated during sync",
+            "depends_on": "eval:doc.use_incremental_sync"
+        },
+        {
             "fieldname": "status_section",
             "fieldtype": "Section Break",
             "label": "Last Execution Status"
@@ -139,6 +187,12 @@
             "fieldname": "run_now_button",
             "fieldtype": "Button",
             "label": "Run Sync Now"
+        },
+        {
+            "fieldname": "create_mirror_doctype_button",
+            "fieldtype": "Button",
+            "label": "Create Mirror DocType",
+            "description": "Auto-create a Frappe DocType that mirrors the WordPress table structure"
         }
     ],
     "links": [],
