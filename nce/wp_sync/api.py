@@ -220,7 +220,7 @@ def generate_doctype_from_wp_table(table_name, columns, doctype_name=None):
         field_def = {
             "fieldname": fieldname,
             "fieldtype": fieldtype,
-            "label": col_name,  # Keep exact same as column name
+            "label": col_name.replace('_', ' ').title(),  # Nice readable label
             "reqd": 1 if is_nullable == 'NO' and not is_pk else 0
         }
         
@@ -428,7 +428,7 @@ def sync_doctype_schema(table_name, doctype_name):
             field_def = {
                 "fieldname": fieldname,
                 "fieldtype": fieldtype,
-                "label": col_name,  # Keep exact same as column name
+                "label": col_name.replace('_', ' ').title(),  # Nice readable label
                 "reqd": 0,  # Don't make required - existing records won't have it
                 "insert_after": doctype_doc.fields[-1].fieldname if doctype_doc.fields else None
             }
