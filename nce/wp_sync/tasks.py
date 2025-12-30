@@ -240,7 +240,8 @@ def sync_wp_to_frappe(task):
             if not source_id_field:
                 source_id_field = row_keys[0]
             
-            field_mapping[source_id_field] = "track_record_id"
+            # Note: Don't overwrite field_mapping here - we need the data field
+            # to be populated too. track_record_id is set separately below.
 
     rows_inserted = 0
     rows_updated = 0
