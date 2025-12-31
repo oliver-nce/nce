@@ -5,6 +5,22 @@
  */
 
 frappe.ui.form.on('WP Sync Task', {
+    refresh: function(frm) {
+        // Display app version
+        frappe.call({
+            method: 'nce.wp_sync.api.get_app_version',
+            callback: function(r) {
+                if (r.message) {
+                    frm.get_field('app_version_display').$wrapper.html(
+                        '<div style="padding: 8px 0; color: #6c757d; font-size: 12px;">' +
+                        '<strong>NCE Sync</strong> ' + r.message.display +
+                        '</div>'
+                    );
+                }
+            }
+        });
+    },
+
     run_now_button: function(frm) {
         frappe.call({
             method: 'nce.wp_sync.api.run_task',
