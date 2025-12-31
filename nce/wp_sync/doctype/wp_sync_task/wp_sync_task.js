@@ -19,6 +19,11 @@ frappe.ui.form.on('WP Sync Task', {
                 }
             }
         });
+        
+        // Load persisted column mapping table
+        if (frm.doc.column_mapping_html) {
+            frm.get_field('column_mapping_display').$wrapper.html(frm.doc.column_mapping_html);
+        }
     },
 
     run_now_button: function(frm) {
@@ -90,6 +95,21 @@ frappe.ui.form.on('WP Sync Task', {
                         });
                         // Auto-fill the target_doctype field
                         frm.set_value('target_doctype', r.message.doctype_name);
+                        
+                        // Build and display comparison table
+                        if (r.message.comparison) {
+                            let html = '<table class="table table-bordered table-sm">';
+                            html += '<thead><tr><th>WordPress Column</th><th>Frappe Field</th><th>Label</th></tr></thead>';
+                            html += '<tbody>';
+                            r.message.comparison.forEach(function(row) {
+                                html += '<tr><td>' + row.source + '</td><td>' + row.fieldname + '</td><td>' + row.label + '</td></tr>';
+                            });
+                            html += '</tbody></table>';
+                            
+                            frm.get_field('column_mapping_display').$wrapper.html(html);
+                            frm.set_value('column_mapping_html', html);
+                        }
+                        
                         // Only auto-save if document already exists
                         if (!frm.is_new()) {
                             frm.save();

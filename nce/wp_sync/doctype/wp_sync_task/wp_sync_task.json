@@ -31,7 +31,10 @@
         "last_error",
         "actions_section",
         "run_now_button",
-        "create_mirror_doctype_button"
+        "create_mirror_doctype_button",
+        "column_mapping_section",
+        "column_mapping_display",
+        "column_mapping_html"
     ],
     "fields": [
         {
@@ -199,6 +202,23 @@
             "fieldtype": "Button",
             "label": "Create Mirror DocType",
             "description": "Auto-create a Frappe DocType that mirrors the WordPress table structure"
+        },
+        {
+            "fieldname": "column_mapping_section",
+            "fieldtype": "Section Break",
+            "label": "Column Mapping",
+            "collapsible": 1
+        },
+        {
+            "fieldname": "column_mapping_display",
+            "fieldtype": "HTML",
+            "label": "Column Mapping Table"
+        },
+        {
+            "fieldname": "column_mapping_html",
+            "fieldtype": "Text",
+            "label": "Column Mapping HTML",
+            "hidden": 1
         }
     ],
     "links": [],
