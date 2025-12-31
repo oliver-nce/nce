@@ -6,8 +6,16 @@
 
 frappe.ui.form.on('WP Sync Settings', {
     refresh: function(frm) {
-        // Button field from JSON will be rendered automatically
-        // We just need to handle its click event
+        // Display app version
+        frappe.call({
+            method: 'nce.wp_sync.api.get_app_version',
+            callback: function(r) {
+                if (r.message) {
+                    let html = '<div style="color:#888; font-size:12px; margin-bottom:10px;">NCE Sync ' + r.message.display + '</div>';
+                    frm.fields_dict.app_version_display.$wrapper.html(html);
+                }
+            }
+        });
     },
     
     test_connection_button: function(frm) {

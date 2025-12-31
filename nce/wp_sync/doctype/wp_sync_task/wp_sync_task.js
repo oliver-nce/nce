@@ -6,6 +6,17 @@
 
 frappe.ui.form.on('WP Sync Task', {
     refresh: function(frm) {
+        // Display app version
+        frappe.call({
+            method: 'nce.wp_sync.api.get_app_version',
+            callback: function(r) {
+                if (r.message) {
+                    let html = '<div style="color:#888; font-size:12px; margin-bottom:10px;">NCE Sync ' + r.message.display + '</div>';
+                    frm.fields_dict.app_version_display.$wrapper.html(html);
+                }
+            }
+        });
+        
         // Load and render stored column mapping HTML
         if (frm.doc.column_mapping_html) {
             frm.fields_dict.column_mapping_display.$wrapper.html(frm.doc.column_mapping_html);

@@ -5,6 +5,7 @@
     "doctype": "DocType",
     "engine": "InnoDB",
     "field_order": [
+        "app_version_display",
         "task_name",
         "enabled",
         "execution_order",
@@ -37,6 +38,11 @@
         "source_table_schema"
     ],
     "fields": [
+        {
+            "fieldname": "app_version_display",
+            "fieldtype": "HTML",
+            "label": "App Version"
+        },
         {
             "fieldname": "task_name",
             "fieldtype": "Data",

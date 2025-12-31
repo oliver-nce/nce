@@ -7,6 +7,13 @@ Whitelisted API methods for manual sync triggers and status checks.
 import frappe
 from frappe import _
 import re
+from nce import get_version_info
+
+
+@frappe.whitelist()
+def get_app_version():
+    """Return app version info for display in UI."""
+    return get_version_info()
 
 
 def mysql_type_to_frappe_fieldtype(mysql_type):
