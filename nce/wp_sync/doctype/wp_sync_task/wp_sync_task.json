@@ -32,7 +32,8 @@
         "run_now_button",
         "create_mirror_doctype_button",
         "column_mapping_section",
-        "column_mapping_display"
+        "column_mapping_display",
+        "column_mapping_html"
     ],
     "fields": [
         {
@@ -205,8 +206,13 @@
         {
             "fieldname": "column_mapping_display",
             "fieldtype": "HTML",
-            "label": "Column Mapping Table",
-            "read_only": 1
+            "label": "Column Mapping Table"
+        },
+        {
+            "fieldname": "column_mapping_html",
+            "fieldtype": "Text",
+            "label": "Column Mapping Data",
+            "hidden": 1
         }
     ],
     "links": [],

@@ -5,6 +5,13 @@
  */
 
 frappe.ui.form.on('WP Sync Task', {
+    refresh: function(frm) {
+        // Load and render stored column mapping HTML
+        if (frm.doc.column_mapping_html) {
+            frm.fields_dict.column_mapping_display.$wrapper.html(frm.doc.column_mapping_html);
+        }
+    },
+
     run_now_button: function(frm) {
         frappe.call({
             method: 'nce.wp_sync.api.run_task',
@@ -82,8 +89,9 @@ frappe.ui.form.on('WP Sync Task', {
                             }
                             html += '</tbody></table>';
                             
-                            // Save HTML to the field
-                            frm.set_value('column_mapping_display', html);
+                            // Display HTML in the field and store for persistence
+                            frm.fields_dict.column_mapping_display.$wrapper.html(html);
+                            frm.set_value('column_mapping_html', html);
                             
                             frappe.show_alert({
                                 message: __('DocType "{0}" created! See Column Mapping below.', [r.message.doctype_name]),
