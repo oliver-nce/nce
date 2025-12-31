@@ -54,10 +54,25 @@ frappe.ui.form.on('WP Sync Task', {
                     freeze_message: __('Creating DocType...'),
                     callback: function(r) {
                         if (r.message && r.message.success) {
+                            // Build comparison table HTML
+                            let html = '<h4>DocType: ' + r.message.doctype_name + '</h4>';
+                            html += '<table class="table table-bordered" style="width:100%"><thead><tr style="background:#f5f5f5"><th>Source Column</th><th>Fieldname (DB)</th><th>Label (UI)</th></tr></thead><tbody>';
+                            if (r.message.comparison) {
+                                r.message.comparison.forEach(function(row) {
+                                    let match = row.source === row.fieldname ? '✓' : '✗';
+                                    html += '<tr><td>' + row.source + '</td><td>' + row.fieldname + ' ' + match + '</td><td>' + row.label + '</td></tr>';
+                                });
+                            }
+                            html += '</tbody></table>';
+                            
+                            // Save HTML to the field
+                            frm.set_value('column_mapping_display', html);
+                            
                             frappe.show_alert({
-                                message: __('DocType "{0}" created successfully!', [r.message.doctype_name]),
+                                message: __('DocType "{0}" created! See Column Mapping below.', [r.message.doctype_name]),
                                 indicator: 'green'
                             });
+                            
                             // Auto-fill the target_doctype field
                             frm.set_value('target_doctype', r.message.doctype_name);
                             // Only auto-save if document already exists
