@@ -5,7 +5,6 @@
     "doctype": "DocType",
     "engine": "InnoDB",
     "field_order": [
-        "app_version_display",
         "task_name",
         "enabled",
         "execution_order",
@@ -31,18 +30,9 @@
         "last_error",
         "actions_section",
         "run_now_button",
-        "create_mirror_doctype_button",
-        "column_mapping_section",
-        "column_mapping_display",
-        "column_mapping_html",
-        "source_table_schema"
+        "create_mirror_doctype_button"
     ],
     "fields": [
-        {
-            "fieldname": "app_version_display",
-            "fieldtype": "HTML",
-            "label": "App Version"
-        },
         {
             "fieldname": "task_name",
             "fieldtype": "Data",
@@ -203,30 +193,6 @@
             "fieldtype": "Button",
             "label": "Create Mirror DocType",
             "description": "Auto-create a Frappe DocType that mirrors the WordPress table structure"
-        },
-        {
-            "fieldname": "column_mapping_section",
-            "fieldtype": "Section Break",
-            "label": "Column Mapping",
-            "collapsible": 1
-        },
-        {
-            "fieldname": "column_mapping_display",
-            "fieldtype": "HTML",
-            "label": "Column Mapping Table"
-        },
-        {
-            "fieldname": "column_mapping_html",
-            "fieldtype": "Text",
-            "label": "Column Mapping Data",
-            "hidden": 1
-        },
-        {
-            "fieldname": "source_table_schema",
-            "fieldtype": "JSON",
-            "label": "Source Table Schema",
-            "hidden": 1,
-            "description": "Full table structure from WordPress (for 2-way sync reference)"
         }
     ],
     "links": [],

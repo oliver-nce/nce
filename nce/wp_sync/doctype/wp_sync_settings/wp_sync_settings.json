@@ -4,7 +4,6 @@
     "doctype": "DocType",
     "engine": "InnoDB",
     "field_order": [
-        "app_version_display",
         "connection_section",
         "wp_site_url",
         "wp_username",
@@ -20,11 +19,6 @@
         "test_connection_button"
     ],
     "fields": [
-        {
-            "fieldname": "app_version_display",
-            "fieldtype": "HTML",
-            "label": "App Version"
-        },
         {
             "fieldname": "connection_section",
             "fieldtype": "Section Break",

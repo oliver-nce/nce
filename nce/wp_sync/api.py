@@ -7,7 +7,36 @@ Whitelisted API methods for manual sync triggers and status checks.
 import frappe
 from frappe import _
 import re
-from nce import get_version_info
+import os
+import subprocess
+from datetime import datetime
+from nce import __version__, MAJOR_VERSION
+
+
+def get_version_info():
+    """Get version info with timestamp from git."""
+    try:
+        # Get directory of this file to find git repo
+        app_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        
+        # Get last commit date
+        date = subprocess.check_output(
+            ['git', 'log', '-1', '--format=%ci'],
+            cwd=app_dir,
+            stderr=subprocess.DEVNULL
+        ).decode().strip()[:16]  # "2025-12-30 15:30"
+        
+        return {
+            "version": __version__,
+            "timestamp": date,
+            "display": f"v{__version__} ({date})"
+        }
+    except Exception:
+        return {
+            "version": __version__,
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
+            "display": f"v{__version__}"
+        }
 
 
 @frappe.whitelist()
@@ -237,17 +266,15 @@ def generate_doctype_from_wp_table(table_name, columns, doctype_name=None):
                 field_def["options"] = options
         
         # Set default if present (skip auto-enter/function-based defaults)
-        # These aren't valid in Frappe and indicate auto-generated columns
         auto_defaults = ['CURRENT_TIMESTAMP', 'NOW()', 'CURRENT_DATE', 'CURRENT_TIME', 'UUID()']
         col_extra = col.get('EXTRA', '').upper()
         is_auto_field = (
             'AUTO_INCREMENT' in col_extra or
-            'GENERATED' in col_extra or  # VIRTUAL GENERATED, STORED GENERATED
+            'GENERATED' in col_extra or
             'DEFAULT_GENERATED' in col_extra
         )
         
         if col_default is not None and col_default != 'NULL' and not is_auto_field:
-            # Skip function-based defaults
             if col_default.upper() not in auto_defaults and not col_default.upper().startswith('CURRENT_'):
                 field_def["default"] = col_default
         
@@ -386,8 +413,8 @@ def create_mirror_doctype(table_name, doctype_name=None):
             "doctype_name": final_doctype_name,
             "field_count": len(columns),
             "columns": [c.get("COLUMN_NAME") for c in columns],
-            "comparison": comparison,  # Side-by-side verification
-            "schema": columns  # Full table structure for future reference
+            "comparison": comparison,
+            "schema": columns
         }
     except Exception as e:
         frappe.log_error(f"Error creating DocType for {table_name}: {str(e)}", "WP Sync Error")
@@ -440,8 +467,9 @@ def sync_doctype_schema(table_name, doctype_name):
         if not col_name:
             continue
         
-        # Fieldname = EXACT WordPress column name (no changes)
-        fieldname = col_name
+        # Generate fieldname (same logic as generate_doctype_from_wp_table)
+        # Keep original case - just replace spaces with underscores
+        fieldname = col_name.replace(' ', '_')
         
         # Check if field exists
         if fieldname not in existing_fieldnames:
