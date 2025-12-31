@@ -145,7 +145,7 @@ def get_enum_options(mysql_type):
     return "\n".join(values)
 
 
-def generate_doctype_from_wp_table(table_name, columns, doctype_name=None):
+def generate_doctype_from_wp_table(table_name, columns, doctype_name=None, task_name=None):
     """
     Generate a Frappe DocType definition from WordPress table columns.
     
@@ -153,6 +153,7 @@ def generate_doctype_from_wp_table(table_name, columns, doctype_name=None):
         table_name: Original WordPress table name
         columns: List of column dicts from get_wp_table_columns()
         doctype_name: Optional custom DocType name (defaults to formatted table_name)
+        task_name: Optional task name for naming series (used in autoname)
     
     Returns:
         dict: Complete DocType definition ready for creation
@@ -164,6 +165,15 @@ def generate_doctype_from_wp_table(table_name, columns, doctype_name=None):
         # Prefix with "WP " if not already
         if not doctype_name.upper().startswith('WP '):
             doctype_name = f"WP {doctype_name}"
+    
+    # Generate autoname pattern using task_name if provided
+    if task_name:
+        # Use task name as prefix (sanitize for naming series)
+        series_prefix = task_name.replace(' ', '_').replace('-', '_')
+        autoname_pattern = f"{series_prefix}-.#####"
+    else:
+        # Fallback to table-based naming
+        autoname_pattern = f"WP-{table_name[:10].upper()}-.#####"
     
     # Find primary key column
     primary_key_col = None
@@ -314,7 +324,7 @@ def generate_doctype_from_wp_table(table_name, columns, doctype_name=None):
         "custom": 1,
         "allow_import": 1,
         "naming_rule": "Expression",
-        "autoname": f"WP-{table_name[:10].upper()}-" + ".#####",
+        "autoname": autoname_pattern,
         "title_field": "track_record_id",
         "engine": "InnoDB",
         "is_submittable": 0,
@@ -340,7 +350,7 @@ def generate_doctype_from_wp_table(table_name, columns, doctype_name=None):
 
 
 @frappe.whitelist()
-def create_mirror_doctype(table_name, doctype_name=None):
+def create_mirror_doctype(table_name, doctype_name=None, task_name=None):
     """
     Create a Frappe DocType that mirrors a WordPress table structure.
     
@@ -353,6 +363,7 @@ def create_mirror_doctype(table_name, doctype_name=None):
     Args:
         table_name: Name of the WordPress table/view to mirror
         doctype_name: Optional custom name for the DocType
+        task_name: Task name for naming series (records will be named {task_name}-00001, etc.)
     
     Returns:
         dict: Success status and DocType information
@@ -377,8 +388,18 @@ def create_mirror_doctype(table_name, doctype_name=None):
         }
     
     # Step 2: Generate DocType definition
-    doctype_def = generate_doctype_from_wp_table(table_name, columns, doctype_name)
+    doctype_def = generate_doctype_from_wp_table(table_name, columns, doctype_name, task_name)
     final_doctype_name = doctype_def.get("name")
+    
+    # Step 2.5: Clean up old naming series if exists
+    series_prefix = doctype_def.get("autoname", "").replace(".#####", "")
+    if series_prefix:
+        # Delete any existing series entries to avoid conflicts
+        frappe.db.sql("""
+            DELETE FROM `tabSeries` 
+            WHERE name LIKE %s
+        """, (f"{series_prefix}%",))
+        frappe.db.commit()
     
     # Step 3: Drop existing DocType and table if they exist
     if frappe.db.exists("DocType", final_doctype_name):

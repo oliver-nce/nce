@@ -58,47 +58,60 @@ frappe.ui.form.on('WP Sync Task', {
             return;
         }
 
-        frappe.confirm(
-            __('Create a new DocType that mirrors the WordPress table "{0}"?', [frm.doc.source_table]),
-            function() {
-                frappe.call({
-                    method: 'nce.wp_sync.api.create_mirror_doctype',
-                    args: {
-                        table_name: frm.doc.source_table
-                    },
-                    freeze: true,
-                    freeze_message: __('Creating DocType...'),
-                    callback: function(r) {
-                        if (r.message && r.message.success) {
-                            frappe.show_alert({
-                                message: __('DocType "{0}" created successfully!', [r.message.doctype_name]),
-                                indicator: 'green'
-                            });
-                            // Auto-fill the target_doctype field
-                            frm.set_value('target_doctype', r.message.doctype_name);
-                            // Only auto-save if document already exists
-                            if (!frm.is_new()) {
-                                frm.save();
-                            }
-                        } else if (r.message && r.message.exists) {
-                            frappe.msgprint({
-                                title: __('DocType Already Exists'),
-                                message: __('DocType "{0}" already exists. You can select it as the Target DocType.', [r.message.doctype_name]),
-                                indicator: 'blue'
-                            });
-                            // Auto-fill the target_doctype field
-                            frm.set_value('target_doctype', r.message.doctype_name);
-                        } else {
-                            frappe.msgprint({
-                                title: __('Creation Failed'),
-                                message: r.message.message || __('Unknown error'),
-                                indicator: 'red'
-                            });
-                        }
-                    }
-                });
+        // Generate default DocType name from source table
+        let default_name = frm.doc.target_doctype || 
+            frm.doc.source_table.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        
+        // Prompt for DocType name
+        frappe.prompt([
+            {
+                fieldname: 'doctype_name',
+                fieldtype: 'Data',
+                label: 'DocType Name',
+                reqd: 1,
+                default: default_name,
+                description: 'Name for the new Frappe DocType'
             }
-        );
+        ], function(values) {
+            frappe.call({
+                method: 'nce.wp_sync.api.create_mirror_doctype',
+                args: {
+                    table_name: frm.doc.source_table,
+                    doctype_name: values.doctype_name,
+                    task_name: frm.doc.task_name || frm.doc.name
+                },
+                freeze: true,
+                freeze_message: __('Creating DocType...'),
+                callback: function(r) {
+                    if (r.message && r.message.success) {
+                        frappe.show_alert({
+                            message: __('DocType "{0}" created successfully!', [r.message.doctype_name]),
+                            indicator: 'green'
+                        });
+                        // Auto-fill the target_doctype field
+                        frm.set_value('target_doctype', r.message.doctype_name);
+                        // Only auto-save if document already exists
+                        if (!frm.is_new()) {
+                            frm.save();
+                        }
+                    } else if (r.message && r.message.exists) {
+                        frappe.msgprint({
+                            title: __('DocType Already Exists'),
+                            message: __('DocType "{0}" already exists. You can select it as the Target DocType.', [r.message.doctype_name]),
+                            indicator: 'blue'
+                        });
+                        // Auto-fill the target_doctype field
+                        frm.set_value('target_doctype', r.message.doctype_name);
+                    } else {
+                        frappe.msgprint({
+                            title: __('Creation Failed'),
+                            message: r.message.message || __('Unknown error'),
+                            indicator: 'red'
+                        });
+                    }
+                }
+            });
+        }, __('Create Mirror DocType'), __('Create'));
     }
 });
 
