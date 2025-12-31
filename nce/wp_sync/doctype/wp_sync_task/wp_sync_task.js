@@ -42,14 +42,31 @@ frappe.ui.form.on('WP Sync Task', {
             return;
         }
 
-        frappe.confirm(
-            __('Create a new DocType that mirrors the WordPress table "{0}"?', [frm.doc.source_table]),
-            function() {
-                frappe.call({
-                    method: 'nce.wp_sync.api.create_mirror_doctype',
-                    args: {
-                        table_name: frm.doc.source_table
-                    },
+        // Generate default DocType name from source table
+        let default_name = frm.doc.source_table
+            .replace(/^wp_/, '')
+            .split('_')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+        default_name = 'Wp ' + default_name;
+        
+        // Prompt for DocType name
+        frappe.prompt([
+            {
+                label: 'DocType Name',
+                fieldname: 'doctype_name',
+                fieldtype: 'Data',
+                default: default_name,
+                reqd: 1,
+                description: 'Name for the new Frappe DocType (will store synced data)'
+            }
+        ], function(values) {
+            frappe.call({
+                method: 'nce.wp_sync.api.create_mirror_doctype',
+                args: {
+                    table_name: frm.doc.source_table,
+                    doctype_name: values.doctype_name
+                },
                     freeze: true,
                     freeze_message: __('Creating DocType...'),
                     callback: function(r) {
