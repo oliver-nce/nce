@@ -209,9 +209,8 @@ def generate_doctype_from_wp_table(table_name, columns, doctype_name=None):
         if not col_name:
             continue
         
-        # Generate fieldname (lowercase, underscores) - keep same as WP column name
-        # Keep original case - just replace spaces with underscores
-        fieldname = col_name.replace(' ', '_')
+        # Fieldname = EXACT WordPress column name (no changes)
+        fieldname = col_name
         
         # Get Frappe fieldtype
         fieldtype = mysql_type_to_frappe_fieldtype(col_type)
@@ -268,7 +267,6 @@ def generate_doctype_from_wp_table(table_name, columns, doctype_name=None):
         "name": doctype_name,
         "module": "WP Sync",
         "custom": 1,
-        "allow_import": 1,
         "naming_rule": "Expression",
         "autoname": f"WP-{table_name[:10].upper()}-" + ".#####",
         "title_field": "track_record_id",
@@ -353,12 +351,23 @@ def create_mirror_doctype(table_name, doctype_name=None):
         doc.insert(ignore_permissions=True)
         frappe.db.commit()
         
+        # Build comparison table: source | fieldname | label
+        comparison = []
+        for col in columns:
+            source_col = col.get("COLUMN_NAME", "")
+            comparison.append({
+                "source": source_col,
+                "fieldname": source_col,  # EXACT match
+                "label": source_col.replace('_', ' ').title()
+            })
+        
         return {
             "success": True,
             "message": f"DocType '{final_doctype_name}' created successfully",
             "doctype_name": final_doctype_name,
             "field_count": len(columns),
-            "columns": [c.get("COLUMN_NAME") for c in columns]
+            "columns": [c.get("COLUMN_NAME") for c in columns],
+            "comparison": comparison  # Side-by-side verification
         }
     except Exception as e:
         frappe.log_error(f"Error creating DocType for {table_name}: {str(e)}", "WP Sync Error")
@@ -411,9 +420,8 @@ def sync_doctype_schema(table_name, doctype_name):
         if not col_name:
             continue
         
-        # Generate fieldname (same logic as generate_doctype_from_wp_table)
-        # Keep original case - just replace spaces with underscores
-        fieldname = col_name.replace(' ', '_')
+        # Fieldname = EXACT WordPress column name (no changes)
+        fieldname = col_name
         
         # Check if field exists
         if fieldname not in existing_fieldnames:
