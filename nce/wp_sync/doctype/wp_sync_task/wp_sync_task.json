@@ -33,7 +33,8 @@
         "create_mirror_doctype_button",
         "column_mapping_section",
         "column_mapping_display",
-        "column_mapping_html"
+        "column_mapping_html",
+        "source_table_schema"
     ],
     "fields": [
         {
@@ -213,6 +214,13 @@
             "fieldtype": "Text",
             "label": "Column Mapping Data",
             "hidden": 1
+        },
+        {
+            "fieldname": "source_table_schema",
+            "fieldtype": "JSON",
+            "label": "Source Table Schema",
+            "hidden": 1,
+            "description": "Full table structure from WordPress (for 2-way sync reference)"
         }
     ],
     "links": [],

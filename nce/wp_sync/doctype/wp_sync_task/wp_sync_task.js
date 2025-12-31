@@ -93,6 +93,11 @@ frappe.ui.form.on('WP Sync Task', {
                             frm.fields_dict.column_mapping_display.$wrapper.html(html);
                             frm.set_value('column_mapping_html', html);
                             
+                            // Store full table schema for future reference (2-way sync)
+                            if (r.message.schema) {
+                                frm.set_value('source_table_schema', JSON.stringify(r.message.schema));
+                            }
+                            
                             frappe.show_alert({
                                 message: __('DocType "{0}" created! See Column Mapping below.', [r.message.doctype_name]),
                                 indicator: 'green'

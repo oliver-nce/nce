@@ -229,9 +229,20 @@ def generate_doctype_from_wp_table(table_name, columns, doctype_name=None):
             if options:
                 field_def["options"] = options
         
-        # Set default if present
-        if col_default is not None and col_default != 'NULL':
-            field_def["default"] = col_default
+        # Set default if present (skip auto-enter/function-based defaults)
+        # These aren't valid in Frappe and indicate auto-generated columns
+        auto_defaults = ['CURRENT_TIMESTAMP', 'NOW()', 'CURRENT_DATE', 'CURRENT_TIME', 'UUID()']
+        col_extra = col.get('EXTRA', '').upper()
+        is_auto_field = (
+            'AUTO_INCREMENT' in col_extra or
+            'GENERATED' in col_extra or  # VIRTUAL GENERATED, STORED GENERATED
+            'DEFAULT_GENERATED' in col_extra
+        )
+        
+        if col_default is not None and col_default != 'NULL' and not is_auto_field:
+            # Skip function-based defaults
+            if col_default.upper() not in auto_defaults and not col_default.upper().startswith('CURRENT_'):
+                field_def["default"] = col_default
         
         # Primary key field settings
         if is_pk:
@@ -368,7 +379,8 @@ def create_mirror_doctype(table_name, doctype_name=None):
             "doctype_name": final_doctype_name,
             "field_count": len(columns),
             "columns": [c.get("COLUMN_NAME") for c in columns],
-            "comparison": comparison  # Side-by-side verification
+            "comparison": comparison,  # Side-by-side verification
+            "schema": columns  # Full table structure for future reference
         }
     except Exception as e:
         frappe.log_error(f"Error creating DocType for {table_name}: {str(e)}", "WP Sync Error")
