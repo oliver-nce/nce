@@ -32,6 +32,7 @@
         "actions_section",
         "run_now_button",
         "create_mirror_doctype_button",
+        "delete_all_records_button",
         "column_mapping_section",
         "column_mapping_display",
         "column_mapping_html"
@@ -202,6 +203,12 @@
             "fieldtype": "Button",
             "label": "Create Mirror DocType",
             "description": "Auto-create a Frappe DocType that mirrors the WordPress table structure"
+        },
+        {
+            "fieldname": "delete_all_records_button",
+            "fieldtype": "Button",
+            "label": "Delete All Records",
+            "description": "Delete all records from the Target DocType (cannot be undone!)"
         },
         {
             "fieldname": "column_mapping_section",

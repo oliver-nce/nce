@@ -132,6 +132,39 @@ frappe.ui.form.on('WP Sync Task', {
                 }
             });
         }, __('Create Mirror DocType'), __('Create'));
+    },
+
+    delete_all_records_button: function(frm) {
+        if (!frm.doc.target_doctype) {
+            frappe.msgprint({
+                title: __('No Target DocType'),
+                message: __('Please set a Target DocType first'),
+                indicator: 'orange'
+            });
+            return;
+        }
+        
+        frappe.confirm(
+            __('Delete ALL records from "{0}"? This cannot be undone!', [frm.doc.target_doctype]),
+            function() {
+                frappe.call({
+                    method: 'delete_all_records',
+                    args: {
+                        doctype: frm.doc.target_doctype
+                    },
+                    freeze: true,
+                    freeze_message: __('Deleting records...'),
+                    callback: function(r) {
+                        if (r.message) {
+                            frappe.show_alert({
+                                message: r.message,
+                                indicator: 'green'
+                            });
+                        }
+                    }
+                });
+            }
+        );
     }
 });
 
