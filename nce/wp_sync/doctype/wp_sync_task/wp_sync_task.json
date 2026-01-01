@@ -33,6 +33,7 @@
         "run_now_button",
         "create_mirror_doctype_button",
         "delete_all_records_button",
+        "start_over_button",
         "column_mapping_section",
         "column_mapping_display",
         "column_mapping_html"
@@ -209,6 +210,12 @@
             "fieldtype": "Button",
             "label": "Delete All Records",
             "description": "Delete all records from the Target DocType (cannot be undone!)"
+        },
+        {
+            "fieldname": "start_over_button",
+            "fieldtype": "Button",
+            "label": "START OVER",
+            "description": "Completely delete the Target DocType and all its data (cannot be undone!)"
         },
         {
             "fieldname": "column_mapping_section",

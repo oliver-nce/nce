@@ -827,6 +827,50 @@ def delete_all_records(doctype):
 
 
 @frappe.whitelist()
+def delete_doctype(doctype):
+    """
+    Completely delete a DocType and its data.
+    
+    Args:
+        doctype: Name of the DocType to delete
+    
+    Returns:
+        dict: Success status
+    """
+    frappe.only_for("System Manager")
+    
+    if not doctype:
+        frappe.throw(_("Please provide a doctype parameter"))
+    
+    if not frappe.db.exists("DocType", doctype):
+        frappe.throw(_("DocType '{0}' does not exist").format(doctype))
+    
+    # Get record count before deletion
+    try:
+        count = frappe.db.count(doctype)
+    except Exception:
+        count = 0
+    
+    # Delete the DocType (this also drops the table)
+    frappe.delete_doc("DocType", doctype, force=True, ignore_permissions=True)
+    frappe.db.commit()
+    
+    # Clean up naming series
+    frappe.db.sql("DELETE FROM `tabSeries` WHERE name LIKE %s", (f"{doctype}%",))
+    frappe.db.commit()
+    
+    # Clear cache
+    frappe.clear_cache()
+    
+    return {
+        "success": True,
+        "message": f"Deleted DocType '{doctype}' with {count} records",
+        "doctype": doctype,
+        "records_deleted": count
+    }
+
+
+@frappe.whitelist()
 def get_sync_status():
     """
     Get overall sync status and recent logs.

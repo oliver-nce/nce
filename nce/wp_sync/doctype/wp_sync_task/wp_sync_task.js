@@ -216,8 +216,52 @@ frappe.ui.form.on('WP Sync Task', {
                     callback: function(r) {
                         if (r.message) {
                             frappe.show_alert({
-                                message: r.message,
+                                message: r.message.message || r.message,
                                 indicator: 'green'
+                            });
+                        }
+                    }
+                });
+            }
+        );
+    },
+
+    start_over_button: function(frm) {
+        if (!frm.doc.target_doctype) {
+            frappe.msgprint({
+                title: __('No Target DocType'),
+                message: __('Please set a Target DocType first'),
+                indicator: 'orange'
+            });
+            return;
+        }
+        
+        frappe.confirm(
+            __('COMPLETELY DELETE DocType "{0}" and ALL its data? This cannot be undone!', [frm.doc.target_doctype]),
+            function() {
+                frappe.call({
+                    method: 'nce.wp_sync.api.delete_doctype',
+                    args: {
+                        doctype: frm.doc.target_doctype
+                    },
+                    freeze: true,
+                    freeze_message: __('Deleting DocType...'),
+                    callback: function(r) {
+                        if (r.message && r.message.success) {
+                            frappe.show_alert({
+                                message: r.message.message,
+                                indicator: 'green'
+                            });
+                            // Clear the target_doctype field and column mapping
+                            frm.set_value('target_doctype', '');
+                            frm.set_value('column_mapping_html', '');
+                            frm.get_field('column_mapping_display').$wrapper.html('');
+                            frm.save();
+                        } else {
+                            frappe.msgprint({
+                                title: __('Deletion Failed'),
+                                message: r.message ? r.message.message : __('Unknown error'),
+                                indicator: 'red'
                             });
                         }
                     }
