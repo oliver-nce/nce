@@ -63,75 +63,134 @@ frappe.ui.form.on('WP Sync Task', {
             return;
         }
 
-        // Generate default DocType name from source table
-        let default_name = frm.doc.target_doctype || 
-            frm.doc.source_table.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-        
-        // Prompt for DocType name
-        frappe.prompt([
-            {
-                fieldname: 'doctype_name',
-                fieldtype: 'Data',
-                label: 'DocType Name',
-                reqd: 1,
-                default: default_name,
-                description: 'Name for the new Frappe DocType'
-            }
-        ], function(values) {
-            frappe.call({
-                method: 'nce.wp_sync.api.create_mirror_doctype',
-                args: {
-                    table_name: frm.doc.source_table,
-                    doctype_name: values.doctype_name,
-                    task_name: frm.doc.task_name || frm.doc.name
-                },
-                freeze: true,
-                freeze_message: __('Creating DocType...'),
-                callback: function(r) {
-                    if (r.message && r.message.success) {
-                        frappe.show_alert({
-                            message: __('DocType "{0}" created successfully!', [r.message.doctype_name]),
-                            indicator: 'green'
-                        });
-                        // Auto-fill the target_doctype field
-                        frm.set_value('target_doctype', r.message.doctype_name);
-                        
-                        // Build and display comparison table
-                        if (r.message.comparison) {
-                            let html = '<table class="table table-bordered table-sm">';
-                            html += '<thead><tr><th>WordPress Column</th><th>Frappe Field</th><th>Label</th></tr></thead>';
-                            html += '<tbody>';
-                            r.message.comparison.forEach(function(row) {
-                                html += '<tr><td>' + row.source + '</td><td>' + row.fieldname + '</td><td>' + row.label + '</td></tr>';
-                            });
-                            html += '</tbody></table>';
-                            
-                            frm.get_field('column_mapping_display').$wrapper.html(html);
-                            frm.set_value('column_mapping_html', html);
+        // Step 1: Fetch preview of columns and suggested types
+        frappe.call({
+            method: 'nce.wp_sync.api.preview_mirror_doctype',
+            args: {
+                table_name: frm.doc.source_table
+            },
+            freeze: true,
+            freeze_message: __('Fetching table structure...'),
+            callback: function(r) {
+                if (!r.message || !r.message.success) {
+                    frappe.msgprint({
+                        title: __('Preview Failed'),
+                        message: r.message ? r.message.message : __('Unknown error'),
+                        indicator: 'red'
+                    });
+                    return;
+                }
+
+                let preview = r.message.preview;
+                let field_types = r.message.field_types;
+                
+                // Generate default DocType name
+                let default_name = frm.doc.target_doctype || 
+                    frm.doc.source_table.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                
+                // Build preview table HTML with dropdowns
+                let table_html = '<table class="table table-bordered table-sm" style="margin-top:10px;">';
+                table_html += '<thead><tr><th>WordPress Column</th><th>MySQL Type</th><th>Frappe Type</th><th>Label</th></tr></thead>';
+                table_html += '<tbody>';
+                
+                preview.forEach(function(row, idx) {
+                    let options_html = field_types.map(function(ft) {
+                        let selected = ft === row.suggested_type ? 'selected' : '';
+                        return '<option value="' + ft + '" ' + selected + '>' + ft + '</option>';
+                    }).join('');
+                    
+                    table_html += '<tr>';
+                    table_html += '<td><strong>' + row.column + '</strong></td>';
+                    table_html += '<td><code>' + row.mysql_type + '</code></td>';
+                    table_html += '<td><select class="form-control input-sm field-type-select" data-column="' + row.column + '">' + options_html + '</select></td>';
+                    table_html += '<td>' + row.label + '</td>';
+                    table_html += '</tr>';
+                });
+                table_html += '</tbody></table>';
+                
+                // Show dialog with preview and editable types
+                let d = new frappe.ui.Dialog({
+                    title: __('Create Mirror DocType'),
+                    size: 'large',
+                    fields: [
+                        {
+                            fieldname: 'doctype_name',
+                            fieldtype: 'Data',
+                            label: 'DocType Name',
+                            reqd: 1,
+                            default: default_name
+                        },
+                        {
+                            fieldname: 'preview_html',
+                            fieldtype: 'HTML',
+                            options: '<div style="max-height:400px; overflow-y:auto;">' + table_html + '</div>'
                         }
+                    ],
+                    primary_action_label: __('Create DocType'),
+                    primary_action: function() {
+                        let doctype_name = d.get_value('doctype_name');
                         
-                        // Only auto-save if document already exists
-                        if (!frm.is_new()) {
-                            frm.save();
-                        }
-                    } else if (r.message && r.message.exists) {
-                        frappe.msgprint({
-                            title: __('DocType Already Exists'),
-                            message: __('DocType "{0}" already exists. You can select it as the Target DocType.', [r.message.doctype_name]),
-                            indicator: 'blue'
+                        // Collect field type selections
+                        let field_types_map = {};
+                        d.$wrapper.find('.field-type-select').each(function() {
+                            let col = $(this).data('column');
+                            let type = $(this).val();
+                            field_types_map[col] = type;
                         });
-                        // Auto-fill the target_doctype field
-                        frm.set_value('target_doctype', r.message.doctype_name);
-                    } else {
-                        frappe.msgprint({
-                            title: __('Creation Failed'),
-                            message: r.message.message || __('Unknown error'),
-                            indicator: 'red'
+                        
+                        d.hide();
+                        
+                        // Step 2: Create the DocType with selected types
+                        frappe.call({
+                            method: 'nce.wp_sync.api.create_mirror_doctype',
+                            args: {
+                                table_name: frm.doc.source_table,
+                                doctype_name: doctype_name,
+                                task_name: frm.doc.task_name || frm.doc.name,
+                                field_types: JSON.stringify(field_types_map)
+                            },
+                            freeze: true,
+                            freeze_message: __('Creating DocType...'),
+                            callback: function(r) {
+                                if (r.message && r.message.success) {
+                                    frappe.show_alert({
+                                        message: __('DocType "{0}" created successfully!', [r.message.doctype_name]),
+                                        indicator: 'green'
+                                    });
+                                    frm.set_value('target_doctype', r.message.doctype_name);
+                                    
+                                    // Build and display comparison table
+                                    if (r.message.comparison) {
+                                        let html = '<table class="table table-bordered table-sm">';
+                                        html += '<thead><tr><th>WordPress Column</th><th>Frappe Field</th><th>Label</th></tr></thead>';
+                                        html += '<tbody>';
+                                        r.message.comparison.forEach(function(row) {
+                                            html += '<tr><td>' + row.source + '</td><td>' + row.fieldname + '</td><td>' + row.label + '</td></tr>';
+                                        });
+                                        html += '</tbody></table>';
+                                        
+                                        frm.get_field('column_mapping_display').$wrapper.html(html);
+                                        frm.set_value('column_mapping_html', html);
+                                    }
+                                    
+                                    if (!frm.is_new()) {
+                                        frm.save();
+                                    }
+                                } else {
+                                    frappe.msgprint({
+                                        title: __('Creation Failed'),
+                                        message: r.message ? r.message.message : __('Unknown error'),
+                                        indicator: 'red'
+                                    });
+                                }
+                            }
                         });
                     }
-                }
-            });
-        }, __('Create Mirror DocType'), __('Create'));
+                });
+                
+                d.show();
+            }
+        });
     },
 
     delete_all_records_button: function(frm) {

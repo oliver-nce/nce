@@ -145,7 +145,7 @@ def get_enum_options(mysql_type):
     return "\n".join(values)
 
 
-def generate_doctype_from_wp_table(table_name, columns, doctype_name=None, task_name=None):
+def generate_doctype_from_wp_table(table_name, columns, doctype_name=None, task_name=None, field_types_override=None):
     """
     Generate a Frappe DocType definition from WordPress table columns.
     
@@ -258,8 +258,11 @@ def generate_doctype_from_wp_table(table_name, columns, doctype_name=None, task_
         # Fieldname = EXACT WordPress column name (no changes)
         fieldname = col_name
         
-        # Get Frappe fieldtype
-        fieldtype = mysql_type_to_frappe_fieldtype(col_type)
+        # Get Frappe fieldtype - use override if provided, else auto-detect
+        if field_types_override and col_name in field_types_override:
+            fieldtype = field_types_override[col_name]
+        else:
+            fieldtype = mysql_type_to_frappe_fieldtype(col_type)
         
         # Build field definition
         field_def = {
@@ -350,7 +353,72 @@ def generate_doctype_from_wp_table(table_name, columns, doctype_name=None, task_
 
 
 @frappe.whitelist()
-def create_mirror_doctype(table_name, doctype_name=None, task_name=None):
+def preview_mirror_doctype(table_name):
+    """
+    Preview the field mapping for a WordPress table before creating DocType.
+    
+    Returns column info with suggested Frappe field types that can be adjusted.
+    
+    Args:
+        table_name: Name of the WordPress table/view
+    
+    Returns:
+        dict: Column info with suggested field types
+    """
+    frappe.only_for("System Manager")
+    
+    # Get table columns from WordPress
+    columns_result = get_wp_table_columns(table_name)
+    
+    if not columns_result.get("success"):
+        return {
+            "success": False,
+            "message": f"Failed to get table structure: {columns_result.get('message')}"
+        }
+    
+    columns = columns_result.get("columns", [])
+    
+    if not columns:
+        return {
+            "success": False,
+            "message": f"No columns found for table '{table_name}'"
+        }
+    
+    # Build preview with suggested types
+    preview = []
+    for col in columns:
+        col_name = col.get("COLUMN_NAME", "")
+        col_type = col.get("COLUMN_TYPE", "")
+        
+        if not col_name:
+            continue
+        
+        suggested_type = mysql_type_to_frappe_fieldtype(col_type)
+        
+        preview.append({
+            "column": col_name,
+            "mysql_type": col_type,
+            "suggested_type": suggested_type,
+            "label": col_name.replace('_', ' ').title()
+        })
+    
+    # Available Frappe field types for dropdown
+    field_types = [
+        "Data", "Int", "Float", "Check", "Date", "Datetime", 
+        "Time", "Text", "Small Text", "Select", "JSON", "Link",
+        "Currency", "Percent", "Rating", "Color", "Password"
+    ]
+    
+    return {
+        "success": True,
+        "table_name": table_name,
+        "preview": preview,
+        "field_types": field_types
+    }
+
+
+@frappe.whitelist()
+def create_mirror_doctype(table_name, doctype_name=None, task_name=None, field_types=None):
     """
     Create a Frappe DocType that mirrors a WordPress table structure.
     
@@ -387,8 +455,17 @@ def create_mirror_doctype(table_name, doctype_name=None, task_name=None):
             "message": f"No columns found for table '{table_name}'"
         }
     
+    # Parse field_types if provided as JSON string
+    import json
+    field_types_override = None
+    if field_types:
+        if isinstance(field_types, str):
+            field_types_override = json.loads(field_types)
+        else:
+            field_types_override = field_types
+    
     # Step 2: Generate DocType definition
-    doctype_def = generate_doctype_from_wp_table(table_name, columns, doctype_name, task_name)
+    doctype_def = generate_doctype_from_wp_table(table_name, columns, doctype_name, task_name, field_types_override)
     final_doctype_name = doctype_def.get("name")
     
     # Step 2.5: Clean up old naming series if exists
