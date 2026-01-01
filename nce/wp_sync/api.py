@@ -320,7 +320,7 @@ def generate_doctype_from_wp_table(table_name, columns, doctype_name=None, task_
     doctype_def = {
         "doctype": "DocType",
         "name": doctype_name,
-        "module": "WP Sync",
+        "module": "Custom",
         "custom": 1,
         "allow_import": 1,
         "naming_rule": "Expression",
