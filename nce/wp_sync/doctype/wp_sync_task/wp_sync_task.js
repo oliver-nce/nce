@@ -148,7 +148,7 @@ frappe.ui.form.on('WP Sync Task', {
             __('Delete ALL records from "{0}"? This cannot be undone!', [frm.doc.target_doctype]),
             function() {
                 frappe.call({
-                    method: 'delete_all_records',
+                    method: 'nce.wp_sync.api.delete_all_records',
                     args: {
                         doctype: frm.doc.target_doctype
                     },

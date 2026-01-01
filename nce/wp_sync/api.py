@@ -713,6 +713,43 @@ def get_wp_table_columns(table_name):
 
 
 @frappe.whitelist()
+def delete_all_records(doctype):
+    """
+    Delete all records from a DocType.
+    
+    Args:
+        doctype: Name of the DocType to clear
+    
+    Returns:
+        dict: Success status and count of deleted records
+    """
+    frappe.only_for("System Manager")
+    
+    if not doctype:
+        frappe.throw(_("Please provide a doctype parameter"))
+    
+    if not frappe.db.exists("DocType", doctype):
+        frappe.throw(_("DocType '{0}' does not exist").format(doctype))
+    
+    # Get count before deletion
+    count = frappe.db.count(doctype)
+    
+    # Delete all records using direct SQL (faster than doc.delete() for bulk)
+    frappe.db.sql("DELETE FROM `tab{0}`".format(doctype))
+    frappe.db.commit()
+    
+    # Reset the naming series counter
+    frappe.db.sql("DELETE FROM `tabSeries` WHERE name LIKE %s", (f"{doctype}%",))
+    frappe.db.commit()
+    
+    return {
+        "success": True,
+        "message": f"Deleted {count} records from {doctype}",
+        "count": count
+    }
+
+
+@frappe.whitelist()
 def get_sync_status():
     """
     Get overall sync status and recent logs.
