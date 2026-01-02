@@ -19,8 +19,15 @@ frappe.ui.form.on('WP Sync Task', {
                     );
                     // Headline fallback
                     frm.dashboard.set_headline(__('NCE Sync {0}', [r.message.display]));
+                    // Title subtitle (covers Single and normal doctypes)
+                    if (frm.page && frm.page.set_title_sub) {
+                        frm.page.set_title_sub(__('NCE Sync {0}', [r.message.display]));
+                    }
                 } else {
                     frm.dashboard.set_headline(__('NCE Sync (version unavailable)'));
+                    if (frm.page && frm.page.set_title_sub) {
+                        frm.page.set_title_sub(__('NCE Sync (version unavailable)'));
+                    }
                 }
             }
         });

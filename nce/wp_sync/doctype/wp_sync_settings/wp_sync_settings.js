@@ -19,8 +19,15 @@ frappe.ui.form.on('WP Sync Settings', {
                     );
                     // Headline fallback (shows even if field is hidden by customization)
                     frm.dashboard.set_headline(__('NCE Sync {0}', [r.message.display]));
+                    // Title subtitle (works on Single doctypes where dashboard headline may be hidden)
+                    if (frm.page && frm.page.set_title_sub) {
+                        frm.page.set_title_sub(__('NCE Sync {0}', [r.message.display]));
+                    }
                 } else {
                     frm.dashboard.set_headline(__('NCE Sync (version unavailable)'));
+                    if (frm.page && frm.page.set_title_sub) {
+                        frm.page.set_title_sub(__('NCE Sync (version unavailable)'));
+                    }
                 }
             }
         });
