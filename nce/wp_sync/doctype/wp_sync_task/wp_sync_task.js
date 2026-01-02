@@ -6,16 +6,21 @@
 
 frappe.ui.form.on('WP Sync Task', {
     refresh: function(frm) {
-        // Display app version
+        // Display app version (in field + headline, so it shows even if field is hidden)
         frappe.call({
             method: 'nce.wp_sync.api.get_app_version',
             callback: function(r) {
                 if (r.message) {
+                    // Field (if visible)
                     frm.get_field('app_version_display').$wrapper.html(
                         '<div style="padding: 8px 0; color: #6c757d; font-size: 12px;">' +
                         '<strong>NCE Sync</strong> ' + r.message.display +
                         '</div>'
                     );
+                    // Headline fallback
+                    frm.dashboard.set_headline(__('NCE Sync {0}', [r.message.display]));
+                } else {
+                    frm.dashboard.set_headline(__('NCE Sync (version unavailable)'));
                 }
             }
         });
