@@ -43,8 +43,9 @@
     "fields": [
         {
             "fieldname": "app_version_display",
-            "fieldtype": "HTML",
-            "label": "App Version"
+            "fieldtype": "Data",
+            "label": "App Version",
+            "read_only": 1
         },
         {
             "fieldname": "task_name",

@@ -11,20 +11,19 @@ frappe.ui.form.on('WP Sync Task', {
             method: 'nce.wp_sync.api.get_app_version',
             callback: function(r) {
                 if (r.message) {
-                    // Field (if visible)
-                    frm.get_field('app_version_display').$wrapper.html(
-                        '<div style="padding: 8px 0; color: #6c757d; font-size: 12px;">' +
-                        '<strong>NCE Sync</strong> ' + r.message.display +
-                        '</div>'
-                    );
+                    // Set value into the Data field
+                    frm.set_value('app_version_display', r.message.display);
+                    frm.refresh_field('app_version_display');
                     // Headline fallback
                     frm.dashboard.set_headline(__('NCE Sync {0}', [r.message.display]));
+                    frm.dashboard.add_indicator(__('NCE Sync {0}', [r.message.display]), 'blue');
                     // Title subtitle (covers Single and normal doctypes)
                     if (frm.page && frm.page.set_title_sub) {
                         frm.page.set_title_sub(__('NCE Sync {0}', [r.message.display]));
                     }
                 } else {
                     frm.dashboard.set_headline(__('NCE Sync (version unavailable)'));
+                    frm.dashboard.add_indicator(__('NCE Sync (version unavailable)'), 'orange');
                     if (frm.page && frm.page.set_title_sub) {
                         frm.page.set_title_sub(__('NCE Sync (version unavailable)'));
                     }
