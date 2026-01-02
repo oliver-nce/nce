@@ -1,0 +1,116 @@
+{
+    "actions": [],
+    "allow_rename": 0,
+    "custom": 1,
+    "creation": "2025-01-02 12:00:00.000000",
+    "doctype": "DocType",
+    "engine": "InnoDB",
+    "field_order": [
+        "instructions_html",
+        "target_doctype",
+        "load_json_button",
+        "column_break_1",
+        "validate_json_button",
+        "generate_prompt_button",
+        "editor_section",
+        "json_editor",
+        "output_section",
+        "structure_preview",
+        "prompt_section",
+        "output_prompt"
+    ],
+    "fields": [
+        {
+            "fieldname": "instructions_html",
+            "fieldtype": "HTML",
+            "label": "Instructions"
+        },
+        {
+            "fieldname": "target_doctype",
+            "fieldtype": "Link",
+            "label": "Select DocType",
+            "options": "DocType",
+            "reqd": 1,
+            "description": "Choose the DocType whose layout you want to edit"
+        },
+        {
+            "fieldname": "load_json_button",
+            "fieldtype": "Button",
+            "label": "Load JSON"
+        },
+        {
+            "fieldname": "column_break_1",
+            "fieldtype": "Column Break"
+        },
+        {
+            "fieldname": "validate_json_button",
+            "fieldtype": "Button",
+            "label": "Validate JSON"
+        },
+        {
+            "fieldname": "generate_prompt_button",
+            "fieldtype": "Button",
+            "label": "Generate Prompt for Cursor"
+        },
+        {
+            "fieldname": "editor_section",
+            "fieldtype": "Section Break",
+            "label": "JSON Editor"
+        },
+        {
+            "fieldname": "json_editor",
+            "fieldtype": "Code",
+            "label": "Field Layout JSON",
+            "options": "JSON",
+            "description": "Edit the fields array - reorder, rename, delete, change fieldtypes"
+        },
+        {
+            "fieldname": "output_section",
+            "fieldtype": "Section Break",
+            "label": "Structure Preview",
+            "collapsible": 1
+        },
+        {
+            "fieldname": "structure_preview",
+            "fieldtype": "HTML",
+            "label": "Structure Preview"
+        },
+        {
+            "fieldname": "prompt_section",
+            "fieldtype": "Section Break",
+            "label": "Cursor Prompt Output"
+        },
+        {
+            "fieldname": "output_prompt",
+            "fieldtype": "Code",
+            "label": "Prompt to Paste in Cursor",
+            "options": "Markdown",
+            "read_only": 1,
+            "description": "Copy this entire text and paste it into your Cursor agent chat"
+        }
+    ],
+    "hide_toolbar": 1,
+    "issingle": 1,
+    "links": [],
+    "modified": "2025-01-02 12:00:00.000000",
+    "modified_by": "Administrator",
+    "module": "WP Sync",
+    "name": "Layout Editor",
+    "owner": "Administrator",
+    "permissions": [
+        {
+            "create": 1,
+            "delete": 1,
+            "email": 1,
+            "print": 1,
+            "read": 1,
+            "role": "System Manager",
+            "share": 1,
+            "write": 1
+        }
+    ],
+    "sort_field": "modified",
+    "sort_order": "DESC",
+    "track_changes": 0
+}
+
