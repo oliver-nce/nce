@@ -202,12 +202,12 @@ def sync_wp_to_frappe(task):
     is_generic = task.target_doctype == "WP Table Data"
 
     # Auto-generate field mapping if not provided (for auto-created DocTypes)
-    # Maps WP column names directly to lowercase Frappe field names
+    # Maps WP column names to lowercase Frappe field names (Frappe lowercases all fieldnames)
     if not is_generic and (not field_mapping or len(field_mapping) == 0) and rows:
         field_mapping = {}
         for col_name in rows[0].keys():
-            # Fieldname = EXACT WordPress column name (no changes)
-            frappe_fieldname = col_name
+            # Frappe lowercases all fieldnames, so we must too
+            frappe_fieldname = col_name.lower()
             field_mapping[col_name] = frappe_fieldname
 
     if is_generic:

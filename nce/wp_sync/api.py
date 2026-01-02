@@ -240,6 +240,9 @@ def generate_doctype_from_wp_table(table_name, columns, doctype_name=None, task_
     })
     field_order.append("wp_columns_section")
     
+    # Track fieldnames to prevent duplicates (case-insensitive)
+    seen_fieldnames = set()
+    
     # Convert each WordPress column to a Frappe field
     col_count = 0
     for col in columns:
@@ -257,6 +260,12 @@ def generate_doctype_from_wp_table(table_name, columns, doctype_name=None, task_
         
         # Fieldname = EXACT WordPress column name (no changes)
         fieldname = col_name
+        
+        # Skip duplicate fieldnames (case-insensitive check for Frappe compatibility)
+        fieldname_lower = fieldname.lower()
+        if fieldname_lower in seen_fieldnames:
+            continue
+        seen_fieldnames.add(fieldname_lower)
         
         # Get Frappe fieldtype - use override if provided, else auto-detect
         if field_types_override and col_name in field_types_override:
@@ -600,9 +609,9 @@ def sync_doctype_schema(table_name, doctype_name):
     
     wp_columns = wp_result.get("columns", [])
     
-    # Get existing DocType fields
+    # Get existing DocType fields (case-insensitive for comparison)
     doctype_doc = frappe.get_doc("DocType", doctype_name)
-    existing_fieldnames = {f.fieldname for f in doctype_doc.fields}
+    existing_fieldnames_lower = {f.fieldname.lower() for f in doctype_doc.fields}
     
     # Find new columns (not in DocType)
     new_fields = []
@@ -615,8 +624,8 @@ def sync_doctype_schema(table_name, doctype_name):
         # Keep original case - just replace spaces with underscores
         fieldname = col_name.replace(' ', '_')
         
-        # Check if field exists
-        if fieldname not in existing_fieldnames:
+        # Check if field exists (case-insensitive)
+        if fieldname.lower() not in existing_fieldnames_lower:
             # This is a new column - add it
             col_type = col.get("COLUMN_TYPE", "")
             is_nullable = col.get("IS_NULLABLE", "YES")
