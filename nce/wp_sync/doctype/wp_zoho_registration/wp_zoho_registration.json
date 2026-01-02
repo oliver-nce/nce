@@ -1,7 +1,7 @@
 {
     "actions": [],
     "autoname": "field:wp_source_id",
-    "custom": 1,
+    "custom": 0,
     "creation": "2025-12-28 12:00:00.000000",
     "doctype": "DocType",
     "engine": "InnoDB",
