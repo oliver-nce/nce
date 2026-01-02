@@ -6,6 +6,9 @@
 
 frappe.ui.form.on('WP Sync Task', {
     refresh: function(frm) {
+        // Add NCE theme class to body for CSS targeting
+        $('body').addClass('nce-wp-sync-form');
+        
         // Display app version in HTML field
         frappe.call({
             method: 'nce.wp_sync.api.get_app_version',

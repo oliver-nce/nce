@@ -1,6 +1,9 @@
 /*
  * NCE Brand Theme for Frappe
- * Apply to all WP Sync DocTypes
+ * Apply to all WP Sync DocTypes via .nce-wp-sync-form class
+ * 
+ * Note: data-doctype selectors don't work in Frappe v15
+ * JS adds .nce-wp-sync-form to body when form loads
  * 
  * Brand Colors:
  * - White: #ffffff
@@ -51,24 +54,16 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
 /* ========================================
-   WP Sync Module DocTypes - Global Styles
+   Global Styles for NCE Forms
    ======================================== */
-
-/* Apply to all WP Sync DocTypes */
-[data-doctype="WP Sync Task"],
-[data-doctype="WP Sync Settings"],
-[data-doctype="WP Sync Log"],
-[data-doctype="WP Table Data"],
-[data-doctype="WP Zoho Registration"],
-[data-doctype="Layout Editor"] {
+.nce-wp-sync-form {
     font-family: var(--nce-font-family);
 }
 
 /* ========================================
    Section Headers
    ======================================== */
-[data-doctype^="WP"] .section-head,
-[data-doctype="Layout Editor"] .section-head {
+.nce-wp-sync-form .section-head {
     background: var(--nce-charcoal);
     color: var(--nce-white);
     padding: 8px 12px;
@@ -78,31 +73,27 @@
     margin-top: 15px;
 }
 
-[data-doctype^="WP"] .section-head .collapse-indicator,
-[data-doctype="Layout Editor"] .section-head .collapse-indicator {
+.nce-wp-sync-form .section-head .collapse-indicator {
     color: var(--nce-citron);
 }
 
 /* ========================================
    Form Sections
    ======================================== */
-[data-doctype^="WP"] .form-section,
-[data-doctype="Layout Editor"] .form-section {
+.nce-wp-sync-form .form-section {
     border: 1px solid var(--nce-border);
     border-radius: 0 0 4px 4px;
     background: var(--nce-white);
 }
 
-[data-doctype^="WP"] .form-section.card-section,
-[data-doctype="Layout Editor"] .form-section.card-section {
+.nce-wp-sync-form .form-section.card-section {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 /* ========================================
    Tabs
    ======================================== */
-[data-doctype^="WP"] .form-tabs .nav-link,
-[data-doctype="Layout Editor"] .form-tabs .nav-link {
+.nce-wp-sync-form .form-tabs .nav-link {
     font-family: var(--nce-font-family);
     font-weight: 500;
     color: var(--nce-graphite);
@@ -110,14 +101,12 @@
     padding: 10px 16px;
 }
 
-[data-doctype^="WP"] .form-tabs .nav-link:hover,
-[data-doctype="Layout Editor"] .form-tabs .nav-link:hover {
+.nce-wp-sync-form .form-tabs .nav-link:hover {
     color: var(--nce-charcoal);
     border-bottom-color: var(--nce-medium-gray);
 }
 
-[data-doctype^="WP"] .form-tabs .nav-link.active,
-[data-doctype="Layout Editor"] .form-tabs .nav-link.active {
+.nce-wp-sync-form .form-tabs .nav-link.active {
     color: var(--nce-charcoal);
     border-bottom-color: var(--nce-citron);
     background: transparent;
@@ -126,29 +115,25 @@
 /* ========================================
    Buttons - Primary (Citron)
    ======================================== */
-[data-doctype^="WP"] .btn-primary,
-[data-doctype="Layout Editor"] .btn-primary {
-    background-color: var(--nce-citron);
-    border-color: var(--nce-citron);
-    color: var(--nce-charcoal);
+.nce-wp-sync-form .btn-primary {
+    background-color: var(--nce-citron) !important;
+    border-color: var(--nce-citron) !important;
+    color: var(--nce-charcoal) !important;
     font-family: var(--nce-font-family);
     font-weight: 500;
 }
 
-[data-doctype^="WP"] .btn-primary:hover,
-[data-doctype="Layout Editor"] .btn-primary:hover {
-    background-color: var(--nce-primary-dark);
-    border-color: var(--nce-primary-dark);
-    color: var(--nce-charcoal);
+.nce-wp-sync-form .btn-primary:hover {
+    background-color: var(--nce-primary-dark) !important;
+    border-color: var(--nce-primary-dark) !important;
+    color: var(--nce-charcoal) !important;
 }
 
 /* ========================================
    Buttons - Secondary (Dark)
    ======================================== */
-[data-doctype^="WP"] .btn-secondary,
-[data-doctype^="WP"] .btn-default,
-[data-doctype="Layout Editor"] .btn-secondary,
-[data-doctype="Layout Editor"] .btn-default {
+.nce-wp-sync-form .btn-secondary,
+.nce-wp-sync-form .btn-default {
     background-color: var(--nce-charcoal);
     border-color: var(--nce-charcoal);
     color: var(--nce-white);
@@ -156,10 +141,8 @@
     font-weight: 500;
 }
 
-[data-doctype^="WP"] .btn-secondary:hover,
-[data-doctype^="WP"] .btn-default:hover,
-[data-doctype="Layout Editor"] .btn-secondary:hover,
-[data-doctype="Layout Editor"] .btn-default:hover {
+.nce-wp-sync-form .btn-secondary:hover,
+.nce-wp-sync-form .btn-default:hover {
     background-color: var(--nce-graphite);
     border-color: var(--nce-graphite);
     color: var(--nce-white);
@@ -168,15 +151,13 @@
 /* ========================================
    Buttons - Outline
    ======================================== */
-[data-doctype^="WP"] .btn-outline-secondary,
-[data-doctype="Layout Editor"] .btn-outline-secondary {
+.nce-wp-sync-form .btn-outline-secondary {
     border-color: var(--nce-charcoal);
     color: var(--nce-charcoal);
     font-family: var(--nce-font-family);
 }
 
-[data-doctype^="WP"] .btn-outline-secondary:hover,
-[data-doctype="Layout Editor"] .btn-outline-secondary:hover {
+.nce-wp-sync-form .btn-outline-secondary:hover {
     background-color: var(--nce-charcoal);
     color: var(--nce-white);
 }
@@ -184,14 +165,12 @@
 /* ========================================
    Form Fields
    ======================================== */
-[data-doctype^="WP"] .form-control:focus,
-[data-doctype="Layout Editor"] .form-control:focus {
+.nce-wp-sync-form .form-control:focus {
     border-color: var(--nce-citron);
     box-shadow: 0 0 0 2px rgba(215, 223, 35, 0.2);
 }
 
-[data-doctype^="WP"] .frappe-control .control-label,
-[data-doctype="Layout Editor"] .frappe-control .control-label {
+.nce-wp-sync-form .frappe-control .control-label {
     font-family: var(--nce-font-family);
     font-weight: 500;
     color: var(--nce-charcoal);
@@ -200,21 +179,18 @@
 /* ========================================
    Links
    ======================================== */
-[data-doctype^="WP"] a,
-[data-doctype="Layout Editor"] a {
+.nce-wp-sync-form .form-page a {
     color: var(--nce-charcoal);
 }
 
-[data-doctype^="WP"] a:hover,
-[data-doctype="Layout Editor"] a:hover {
+.nce-wp-sync-form .form-page a:hover {
     color: var(--nce-graphite);
 }
 
 /* ========================================
    Page Header / Title
    ======================================== */
-[data-doctype^="WP"] .page-title .title-text,
-[data-doctype="Layout Editor"] .page-title .title-text {
+.nce-wp-sync-form .page-title .title-text {
     font-family: var(--nce-font-family);
     font-weight: 600;
     color: var(--nce-charcoal);
@@ -223,59 +199,27 @@
 /* ========================================
    Status Indicators
    ======================================== */
-[data-doctype^="WP"] .indicator-pill.green,
-[data-doctype="Layout Editor"] .indicator-pill.green {
+.nce-wp-sync-form .indicator-pill.green {
     background: var(--nce-citron);
     color: var(--nce-charcoal);
 }
 
 /* ========================================
-   Code Fields (for Layout Editor)
-   ======================================== */
-[data-doctype="Layout Editor"] .frappe-control[data-fieldname="json_editor"] .CodeMirror {
-    border: 2px solid var(--nce-border);
-    border-radius: 4px;
-    font-family: 'Monaco', 'Menlo', monospace;
-}
-
-[data-doctype="Layout Editor"] .frappe-control[data-fieldname="json_editor"] .CodeMirror-focused {
-    border-color: var(--nce-citron);
-}
-
-[data-doctype="Layout Editor"] .frappe-control[data-fieldname="output_prompt"] .CodeMirror {
-    background: var(--nce-silver);
-    border: 2px solid var(--nce-citron);
-    border-radius: 4px;
-}
-
-/* ========================================
    Alerts / Messages
    ======================================== */
-[data-doctype^="WP"] .alert-info,
-[data-doctype="Layout Editor"] .alert-info {
+.nce-wp-sync-form .alert-info {
     background-color: rgba(215, 223, 35, 0.1);
     border-color: var(--nce-citron);
     color: var(--nce-charcoal);
 }
 
 /* ========================================
-   List View
-   ======================================== */
-.list-row[data-doctype^="WP"]:hover,
-.list-row[data-doctype="Layout Editor"]:hover {
-    background-color: rgba(215, 223, 35, 0.05);
-}
-
-/* ========================================
    Print / Export - Hide theme for clean output
    ======================================== */
 @media print {
-    [data-doctype^="WP"] .section-head,
-    [data-doctype="Layout Editor"] .section-head {
+    .nce-wp-sync-form .section-head {
         background: none;
         color: var(--nce-black);
         border-bottom: 2px solid var(--nce-black);
     }
 }
-
-
