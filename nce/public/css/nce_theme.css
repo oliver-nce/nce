@@ -1,0 +1,280 @@
+/*
+ * NCE Brand Theme for Frappe
+ * Apply to all WP Sync DocTypes
+ * 
+ * Brand Colors:
+ * - White: #ffffff
+ * - Black: #000000
+ * - Citron: #D7DF23 (primary accent)
+ * - Charcoal: #231F20
+ * - Graphite: #373536
+ * - Silver: #E7E7E6
+ * - Medium Gray: #D0CFCD
+ * - Smoke: #141618
+ *
+ * Fonts:
+ * - Primary: Poppins (400)
+ * - Fallback: Verdana
+ */
+
+/* ========================================
+   CSS Variables - NCE Brand Palette
+   ======================================== */
+:root {
+    /* Brand Colors */
+    --nce-white: #ffffff;
+    --nce-black: #000000;
+    --nce-citron: #D7DF23;
+    --nce-charcoal: #231F20;
+    --nce-graphite: #373536;
+    --nce-silver: #E7E7E6;
+    --nce-medium-gray: #D0CFCD;
+    --nce-smoke: #141618;
+    
+    /* Semantic Colors */
+    --nce-primary: #D7DF23;
+    --nce-primary-dark: #b8bf1e;
+    --nce-secondary: #231F20;
+    --nce-background: #ffffff;
+    --nce-background-alt: #E7E7E6;
+    --nce-text: #231F20;
+    --nce-text-muted: #373536;
+    --nce-border: #D0CFCD;
+    
+    /* Font */
+    --nce-font-family: 'Poppins', Verdana, sans-serif;
+}
+
+/* ========================================
+   Google Font Import
+   ======================================== */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+/* ========================================
+   WP Sync Module DocTypes - Global Styles
+   ======================================== */
+
+/* Apply to all WP Sync DocTypes */
+[data-doctype="WP Sync Task"],
+[data-doctype="WP Sync Settings"],
+[data-doctype="WP Sync Log"],
+[data-doctype="WP Table Data"],
+[data-doctype="WP Zoho Registration"],
+[data-doctype="Layout Editor"] {
+    font-family: var(--nce-font-family);
+}
+
+/* ========================================
+   Section Headers
+   ======================================== */
+[data-doctype^="WP"] .section-head,
+[data-doctype="Layout Editor"] .section-head {
+    background: var(--nce-charcoal);
+    color: var(--nce-white);
+    padding: 8px 12px;
+    border-radius: 4px 4px 0 0;
+    font-weight: 500;
+    font-family: var(--nce-font-family);
+    margin-top: 15px;
+}
+
+[data-doctype^="WP"] .section-head .collapse-indicator,
+[data-doctype="Layout Editor"] .section-head .collapse-indicator {
+    color: var(--nce-citron);
+}
+
+/* ========================================
+   Form Sections
+   ======================================== */
+[data-doctype^="WP"] .form-section,
+[data-doctype="Layout Editor"] .form-section {
+    border: 1px solid var(--nce-border);
+    border-radius: 0 0 4px 4px;
+    background: var(--nce-white);
+}
+
+[data-doctype^="WP"] .form-section.card-section,
+[data-doctype="Layout Editor"] .form-section.card-section {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* ========================================
+   Tabs
+   ======================================== */
+[data-doctype^="WP"] .form-tabs .nav-link,
+[data-doctype="Layout Editor"] .form-tabs .nav-link {
+    font-family: var(--nce-font-family);
+    font-weight: 500;
+    color: var(--nce-graphite);
+    border-bottom: 3px solid transparent;
+    padding: 10px 16px;
+}
+
+[data-doctype^="WP"] .form-tabs .nav-link:hover,
+[data-doctype="Layout Editor"] .form-tabs .nav-link:hover {
+    color: var(--nce-charcoal);
+    border-bottom-color: var(--nce-medium-gray);
+}
+
+[data-doctype^="WP"] .form-tabs .nav-link.active,
+[data-doctype="Layout Editor"] .form-tabs .nav-link.active {
+    color: var(--nce-charcoal);
+    border-bottom-color: var(--nce-citron);
+    background: transparent;
+}
+
+/* ========================================
+   Buttons - Primary (Citron)
+   ======================================== */
+[data-doctype^="WP"] .btn-primary,
+[data-doctype="Layout Editor"] .btn-primary {
+    background-color: var(--nce-citron);
+    border-color: var(--nce-citron);
+    color: var(--nce-charcoal);
+    font-family: var(--nce-font-family);
+    font-weight: 500;
+}
+
+[data-doctype^="WP"] .btn-primary:hover,
+[data-doctype="Layout Editor"] .btn-primary:hover {
+    background-color: var(--nce-primary-dark);
+    border-color: var(--nce-primary-dark);
+    color: var(--nce-charcoal);
+}
+
+/* ========================================
+   Buttons - Secondary (Dark)
+   ======================================== */
+[data-doctype^="WP"] .btn-secondary,
+[data-doctype^="WP"] .btn-default,
+[data-doctype="Layout Editor"] .btn-secondary,
+[data-doctype="Layout Editor"] .btn-default {
+    background-color: var(--nce-charcoal);
+    border-color: var(--nce-charcoal);
+    color: var(--nce-white);
+    font-family: var(--nce-font-family);
+    font-weight: 500;
+}
+
+[data-doctype^="WP"] .btn-secondary:hover,
+[data-doctype^="WP"] .btn-default:hover,
+[data-doctype="Layout Editor"] .btn-secondary:hover,
+[data-doctype="Layout Editor"] .btn-default:hover {
+    background-color: var(--nce-graphite);
+    border-color: var(--nce-graphite);
+    color: var(--nce-white);
+}
+
+/* ========================================
+   Buttons - Outline
+   ======================================== */
+[data-doctype^="WP"] .btn-outline-secondary,
+[data-doctype="Layout Editor"] .btn-outline-secondary {
+    border-color: var(--nce-charcoal);
+    color: var(--nce-charcoal);
+    font-family: var(--nce-font-family);
+}
+
+[data-doctype^="WP"] .btn-outline-secondary:hover,
+[data-doctype="Layout Editor"] .btn-outline-secondary:hover {
+    background-color: var(--nce-charcoal);
+    color: var(--nce-white);
+}
+
+/* ========================================
+   Form Fields
+   ======================================== */
+[data-doctype^="WP"] .form-control:focus,
+[data-doctype="Layout Editor"] .form-control:focus {
+    border-color: var(--nce-citron);
+    box-shadow: 0 0 0 2px rgba(215, 223, 35, 0.2);
+}
+
+[data-doctype^="WP"] .frappe-control .control-label,
+[data-doctype="Layout Editor"] .frappe-control .control-label {
+    font-family: var(--nce-font-family);
+    font-weight: 500;
+    color: var(--nce-charcoal);
+}
+
+/* ========================================
+   Links
+   ======================================== */
+[data-doctype^="WP"] a,
+[data-doctype="Layout Editor"] a {
+    color: var(--nce-charcoal);
+}
+
+[data-doctype^="WP"] a:hover,
+[data-doctype="Layout Editor"] a:hover {
+    color: var(--nce-graphite);
+}
+
+/* ========================================
+   Page Header / Title
+   ======================================== */
+[data-doctype^="WP"] .page-title .title-text,
+[data-doctype="Layout Editor"] .page-title .title-text {
+    font-family: var(--nce-font-family);
+    font-weight: 600;
+    color: var(--nce-charcoal);
+}
+
+/* ========================================
+   Status Indicators
+   ======================================== */
+[data-doctype^="WP"] .indicator-pill.green,
+[data-doctype="Layout Editor"] .indicator-pill.green {
+    background: var(--nce-citron);
+    color: var(--nce-charcoal);
+}
+
+/* ========================================
+   Code Fields (for Layout Editor)
+   ======================================== */
+[data-doctype="Layout Editor"] .frappe-control[data-fieldname="json_editor"] .CodeMirror {
+    border: 2px solid var(--nce-border);
+    border-radius: 4px;
+    font-family: 'Monaco', 'Menlo', monospace;
+}
+
+[data-doctype="Layout Editor"] .frappe-control[data-fieldname="json_editor"] .CodeMirror-focused {
+    border-color: var(--nce-citron);
+}
+
+[data-doctype="Layout Editor"] .frappe-control[data-fieldname="output_prompt"] .CodeMirror {
+    background: var(--nce-silver);
+    border: 2px solid var(--nce-citron);
+    border-radius: 4px;
+}
+
+/* ========================================
+   Alerts / Messages
+   ======================================== */
+[data-doctype^="WP"] .alert-info,
+[data-doctype="Layout Editor"] .alert-info {
+    background-color: rgba(215, 223, 35, 0.1);
+    border-color: var(--nce-citron);
+    color: var(--nce-charcoal);
+}
+
+/* ========================================
+   List View
+   ======================================== */
+.list-row[data-doctype^="WP"]:hover,
+.list-row[data-doctype="Layout Editor"]:hover {
+    background-color: rgba(215, 223, 35, 0.05);
+}
+
+/* ========================================
+   Print / Export - Hide theme for clean output
+   ======================================== */
+@media print {
+    [data-doctype^="WP"] .section-head,
+    [data-doctype="Layout Editor"] .section-head {
+        background: none;
+        color: var(--nce-black);
+        border-bottom: 2px solid var(--nce-black);
+    }
+}
+
