@@ -353,6 +353,52 @@ def generate_doctype_from_wp_table(table_name, columns, doctype_name=None, task_
 
 
 @frappe.whitelist()
+def get_source_columns(table_name):
+    """
+    Get columns from source table for populating dropdowns.
+    
+    Returns all columns and separately lists date/datetime columns.
+    
+    Args:
+        table_name: Name of the WordPress table/view
+    
+    Returns:
+        dict: All columns and date/datetime columns
+    """
+    frappe.only_for("System Manager")
+    
+    columns_result = get_wp_table_columns(table_name)
+    
+    if not columns_result.get("success"):
+        return {
+            "success": False,
+            "message": columns_result.get("message")
+        }
+    
+    columns = columns_result.get("columns", [])
+    
+    all_columns = []
+    date_columns = []
+    
+    for col in columns:
+        col_name = col.get("COLUMN_NAME", "")
+        col_type = col.get("COLUMN_TYPE", "").lower()
+        
+        if col_name:
+            all_columns.append(col_name)
+            
+            # Check if it's a date/datetime type
+            if any(dt in col_type for dt in ['date', 'time', 'timestamp']):
+                date_columns.append(col_name)
+    
+    return {
+        "success": True,
+        "all_columns": all_columns,
+        "date_columns": date_columns
+    }
+
+
+@frappe.whitelist()
 def preview_mirror_doctype(table_name):
     """
     Preview the field mapping for a WordPress table before creating DocType.

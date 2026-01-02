@@ -24,6 +24,41 @@ frappe.ui.form.on('WP Sync Task', {
         if (frm.doc.column_mapping_html) {
             frm.get_field('column_mapping_display').$wrapper.html(frm.doc.column_mapping_html);
         }
+        
+        // Populate column dropdowns if source_table is set
+        if (frm.doc.source_table) {
+            frm.trigger('load_source_columns');
+        }
+    },
+    
+    source_table: function(frm) {
+        // When source table changes, reload column options
+        if (frm.doc.source_table) {
+            frm.trigger('load_source_columns');
+        }
+    },
+    
+    load_source_columns: function(frm) {
+        frappe.call({
+            method: 'nce.wp_sync.api.get_source_columns',
+            args: {
+                table_name: frm.doc.source_table
+            },
+            callback: function(r) {
+                if (r.message && r.message.success) {
+                    // Populate source_primary_key dropdown with all columns
+                    let pk_options = [''].concat(r.message.all_columns);
+                    frm.set_df_property('source_primary_key', 'options', pk_options.join('\n'));
+                    
+                    // Populate updated_at_field dropdown with date/datetime columns
+                    let date_options = [''].concat(r.message.date_columns);
+                    frm.set_df_property('updated_at_field', 'options', date_options.join('\n'));
+                    
+                    frm.refresh_field('source_primary_key');
+                    frm.refresh_field('updated_at_field');
+                }
+            }
+        });
     },
 
     run_now_button: function(frm) {

@@ -34,18 +34,11 @@ def build_incremental_where_clause(task):
         return ""
     
     # Calculate cutoff time with buffer
-    buffer_minutes = task.sync_buffer_minutes or 3
+    buffer_minutes = task.sync_buffer_minutes or 5
     cutoff_time = add_to_date(task.last_run_at, minutes=-buffer_minutes)
     
     # Format timestamp for SQL
-    # Handle timezone - if WordPress stores in UTC, we use UTC
-    # If WordPress uses local time, we need to convert
-    if task.updated_at_timezone == "UTC":
-        # Format as UTC timestamp
-        cutoff_str = cutoff_time.strftime("%Y-%m-%d %H:%M:%S")
-    else:
-        # Server local time - use as-is
-        cutoff_str = cutoff_time.strftime("%Y-%m-%d %H:%M:%S")
+    cutoff_str = cutoff_time.strftime("%Y-%m-%d %H:%M:%S")
     
     # Build the condition
     condition = f"{task.updated_at_field} >= '{cutoff_str}'"
@@ -170,6 +163,13 @@ def sync_wp_to_frappe(task):
                 f"WP Sync: Added {schema_result['fields_added']} new field(s) to {task.target_doctype}"
             )
     
+    # Handle Full Sync with "Clear & Import" mode
+    # Only clear if NOT using incremental sync AND mode is "Clear & Import"
+    if not task.use_incremental_sync and task.full_sync_mode == "Clear & Import":
+        frappe.db.sql("DELETE FROM `tab{0}`".format(task.target_doctype))
+        frappe.db.commit()
+        frappe.logger().info(f"WP Sync: Cleared all records from {task.target_doctype}")
+    
     # Build query
     query = f"SELECT * FROM {task.source_table}"
     
@@ -180,7 +180,7 @@ def sync_wp_to_frappe(task):
     if task.where_clause:
         where_conditions.append(f"({task.where_clause})")
     
-    # Add incremental sync condition
+    # Add incremental sync condition (only if incremental is enabled)
     incremental_condition = build_incremental_where_clause(task)
     if incremental_condition:
         where_conditions.append(f"({incremental_condition})")
@@ -212,22 +212,26 @@ def sync_wp_to_frappe(task):
 
     if is_generic:
         # For generic storage, just need record_id mapping
-        source_id_field = None
-        for wp_col, frappe_field in field_mapping.items():
-            if frappe_field == "record_id":
-                source_id_field = wp_col
-                break
+        source_id_field = task.source_primary_key or None
+        if not source_id_field:
+            for wp_col, frappe_field in field_mapping.items():
+                if frappe_field == "record_id":
+                    source_id_field = wp_col
+                    break
         if not source_id_field:
             source_id_field = "id"  # Default
     else:
-        # Find the source ID field (maps to track_record_id)
-        source_id_field = None
-        for wp_col, frappe_field in field_mapping.items():
-            if frappe_field == "track_record_id":
-                source_id_field = wp_col
-                break
+        # Use configured source_primary_key if set
+        source_id_field = task.source_primary_key or None
         
-        # If not explicitly mapped, find a suitable ID column
+        # If not configured, try field mapping
+        if not source_id_field:
+            for wp_col, frappe_field in field_mapping.items():
+                if frappe_field == "track_record_id":
+                    source_id_field = wp_col
+                    break
+        
+        # If still not found, auto-detect from column names
         if not source_id_field and rows:
             row_keys = list(rows[0].keys())
             # Try common ID column patterns
@@ -239,9 +243,6 @@ def sync_wp_to_frappe(task):
             # Fallback to first column
             if not source_id_field:
                 source_id_field = row_keys[0]
-            
-            # Note: Don't overwrite field_mapping here - we need the data field
-            # to be populated too. track_record_id is set separately below.
 
     rows_inserted = 0
     rows_updated = 0

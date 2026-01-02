@@ -18,11 +18,12 @@
         "field_mapping",
         "where_clause",
         "incremental_sync_section",
-        "updated_at_field",
-        "updated_at_timezone",
-        "column_break_incremental",
-        "sync_buffer_minutes",
         "use_incremental_sync",
+        "source_primary_key",
+        "column_break_incremental",
+        "full_sync_mode",
+        "updated_at_field",
+        "sync_buffer_minutes",
         "status_section",
         "last_run_at",
         "last_run_status",
@@ -117,42 +118,47 @@
         {
             "fieldname": "incremental_sync_section",
             "fieldtype": "Section Break",
-            "label": "Incremental Sync Settings",
-            "collapsible": 1
+            "label": "Sync Settings"
         },
         {
             "fieldname": "use_incremental_sync",
             "fieldtype": "Check",
             "label": "Use Incremental Sync",
             "default": "1",
-            "description": "Only sync records updated since last run (requires updated_at field)"
+            "description": "Only sync records updated since last run"
         },
         {
-            "fieldname": "updated_at_field",
-            "fieldtype": "Data",
-            "label": "Updated At Field",
-            "description": "Column name in WordPress table that stores the last updated timestamp (e.g., updated_at, modified_date)",
-            "depends_on": "eval:doc.use_incremental_sync"
-        },
-        {
-            "fieldname": "updated_at_timezone",
+            "fieldname": "source_primary_key",
             "fieldtype": "Select",
-            "label": "Timestamp Timezone",
-            "options": "UTC\nServer Local Time",
-            "default": "UTC",
-            "description": "Timezone of the updated_at timestamps in WordPress",
-            "depends_on": "eval:doc.use_incremental_sync"
+            "label": "Source Primary Key",
+            "description": "Column used to match records for upsert (insert or update)"
         },
         {
             "fieldname": "column_break_incremental",
             "fieldtype": "Column Break"
         },
         {
+            "fieldname": "full_sync_mode",
+            "fieldtype": "Select",
+            "label": "Full Sync Mode",
+            "options": "Upsert All\nClear & Import",
+            "default": "Upsert All",
+            "description": "Upsert All = update existing, insert new. Clear & Import = delete all first.",
+            "depends_on": "eval:!doc.use_incremental_sync"
+        },
+        {
+            "fieldname": "updated_at_field",
+            "fieldtype": "Select",
+            "label": "Updated At Field",
+            "description": "Date/datetime column to detect changed records",
+            "depends_on": "eval:doc.use_incremental_sync"
+        },
+        {
             "fieldname": "sync_buffer_minutes",
             "fieldtype": "Int",
-            "label": "Sync Buffer (Minutes)",
-            "default": "3",
-            "description": "Look back this many minutes to catch records updated during sync",
+            "label": "Buffer (Minutes)",
+            "default": "5",
+            "description": "Look back extra minutes to catch in-flight updates",
             "depends_on": "eval:doc.use_incremental_sync"
         },
         {
