@@ -70,16 +70,17 @@ frappe.ui.form.on('WP Sync Task', {
             freeze: true,
             freeze_message: __('Running sync...'),
             callback: function(r) {
-                if (r.message && r.message.success) {
+                if (r.message && r.message.status === "Success") {
                     frappe.show_alert({
-                        message: __('Sync completed successfully!'),
+                        message: __('Sync completed! Inserted: {0}, Updated: {1}', 
+                            [r.message.rows_inserted || 0, r.message.rows_updated || 0]),
                         indicator: 'green'
                     });
                     frm.reload_doc();
                 } else {
                     frappe.msgprint({
                         title: __('Sync Failed'),
-                        message: r.message.message || __('Unknown error'),
+                        message: r.message ? (r.message.error || r.message.message || __('Unknown error')) : __('Unknown error'),
                         indicator: 'red'
                     });
                 }
