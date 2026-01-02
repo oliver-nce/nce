@@ -5,6 +5,7 @@
     "doctype": "DocType",
     "engine": "InnoDB",
     "field_order": [
+        "version_section",
         "app_version_display",
         "connection_section",
         "wp_site_url",
@@ -22,10 +23,16 @@
     ],
     "fields": [
         {
+            "fieldname": "version_section",
+            "fieldtype": "Section Break",
+            "label": "App Info"
+        },
+        {
             "fieldname": "app_version_display",
             "fieldtype": "Data",
             "label": "App Version",
-            "read_only": 1
+            "read_only": 1,
+            "description": "NCE Sync app version"
         },
         {
             "fieldname": "connection_section",

@@ -6,6 +6,7 @@
     "doctype": "DocType",
     "engine": "InnoDB",
     "field_order": [
+        "basic_section",
         "app_version_display",
         "task_name",
         "enabled",
@@ -42,10 +43,16 @@
     ],
     "fields": [
         {
+            "fieldname": "basic_section",
+            "fieldtype": "Section Break",
+            "label": "Task Configuration"
+        },
+        {
             "fieldname": "app_version_display",
             "fieldtype": "Data",
             "label": "App Version",
-            "read_only": 1
+            "read_only": 1,
+            "description": "NCE Sync app version"
         },
         {
             "fieldname": "task_name",
