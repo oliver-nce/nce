@@ -174,3 +174,4 @@ def build_structure_preview(fields):
     html.append('</div>')
     return "\n".join(html)
 
+

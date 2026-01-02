@@ -21,6 +21,12 @@ app_license = "MIT"
 # app_include_css = "/assets/nce/css/nce_theme.css"  # TEMPORARILY DISABLED FOR TESTING
 # app_include_js = "/assets/nce/js/nce.js"
 
+# DocType JS - explicitly load JS for custom DocTypes
+doctype_js = {
+    "WP Sync Task": "wp_sync/doctype/wp_sync_task/wp_sync_task.js",
+    "WP Sync Settings": "wp_sync/doctype/wp_sync_settings/wp_sync_settings.js"
+}
+
 # include js, css files in header of web template
 # web_include_css = "/assets/nce/css/nce.css"
 # web_include_js = "/assets/nce/js/nce.js"
