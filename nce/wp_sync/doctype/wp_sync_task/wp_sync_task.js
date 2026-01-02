@@ -6,27 +6,27 @@
 
 frappe.ui.form.on('WP Sync Task', {
     refresh: function(frm) {
-        // Display app version (in field + headline, so it shows even if field is hidden)
+        // Display app version in HTML field
         frappe.call({
             method: 'nce.wp_sync.api.get_app_version',
             callback: function(r) {
                 if (r.message) {
-                    // Set value into the Data field
-                    frm.set_value('app_version_display', r.message.display);
-                    frm.refresh_field('app_version_display');
-                    // Headline fallback
-                    frm.dashboard.set_headline(__('NCE Sync {0}', [r.message.display]));
-                    frm.dashboard.add_indicator(__('NCE Sync {0}', [r.message.display]), 'blue');
-                    // Title subtitle (covers Single and normal doctypes)
-                    if (frm.page && frm.page.set_title_sub) {
-                        frm.page.set_title_sub(__('NCE Sync {0}', [r.message.display]));
-                    }
+                    // Set HTML content for the version display
+                    frm.fields_dict.app_version_display.$wrapper.html(
+                        '<div class="frappe-control" style="margin-bottom: 10px;">' +
+                        '<span class="indicator-pill whitespace-nowrap blue">' + 
+                        '<span class="indicator-dot"></span>' +
+                        '<span>' + r.message.display + '</span>' +
+                        '</span></div>'
+                    );
                 } else {
-                    frm.dashboard.set_headline(__('NCE Sync (version unavailable)'));
-                    frm.dashboard.add_indicator(__('NCE Sync (version unavailable)'), 'orange');
-                    if (frm.page && frm.page.set_title_sub) {
-                        frm.page.set_title_sub(__('NCE Sync (version unavailable)'));
-                    }
+                    frm.fields_dict.app_version_display.$wrapper.html(
+                        '<div class="frappe-control" style="margin-bottom: 10px;">' +
+                        '<span class="indicator-pill whitespace-nowrap orange">' + 
+                        '<span class="indicator-dot"></span>' +
+                        '<span>Version unavailable</span>' +
+                        '</span></div>'
+                    );
                 }
             }
         });

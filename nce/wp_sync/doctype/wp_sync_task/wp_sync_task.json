@@ -49,10 +49,8 @@
         },
         {
             "fieldname": "app_version_display",
-            "fieldtype": "Data",
-            "label": "App Version",
-            "read_only": 1,
-            "description": "NCE Sync app version"
+            "fieldtype": "HTML",
+            "label": "App Version"
         },
         {
             "fieldname": "task_name",
