@@ -71,9 +71,14 @@ frappe.ui.form.on('WP Sync Task', {
             freeze_message: __('Running sync...'),
             callback: function(r) {
                 if (r.message && r.message.status === "Success") {
-                    frappe.show_alert({
-                        message: __('Sync completed! Inserted: {0}, Updated: {1}', 
-                            [r.message.rows_inserted || 0, r.message.rows_updated || 0]),
+                    frappe.msgprint({
+                        title: __('✓ Sync Completed'),
+                        message: '<table class="table table-bordered" style="margin-top:10px;">' +
+                            '<tr><td><strong>Rows Processed</strong></td><td>' + (r.message.rows_processed || 0) + '</td></tr>' +
+                            '<tr><td><strong>Inserted</strong></td><td>' + (r.message.rows_inserted || 0) + '</td></tr>' +
+                            '<tr><td><strong>Updated</strong></td><td>' + (r.message.rows_updated || 0) + '</td></tr>' +
+                            '<tr><td><strong>Skipped</strong></td><td>' + (r.message.rows_skipped || 0) + '</td></tr>' +
+                            '</table>',
                         indicator: 'green'
                     });
                     frm.reload_doc();
