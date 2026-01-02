@@ -1,5 +1,6 @@
 {
     "actions": [],
+    "custom": 1,
     "creation": "2025-12-28 12:00:00.000000",
     "doctype": "DocType",
     "engine": "InnoDB",
