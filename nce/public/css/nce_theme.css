@@ -113,9 +113,11 @@
 }
 
 /* ========================================
-   Buttons - Primary (Citron)
+   Buttons - All (Citron with Black Text)
    ======================================== */
-.nce-wp-sync-form .btn-primary {
+.nce-wp-sync-form .btn-primary,
+.nce-wp-sync-form .btn-secondary,
+.nce-wp-sync-form .btn-default {
     background-color: var(--nce-citron) !important;
     border-color: var(--nce-citron) !important;
     color: var(--nce-charcoal) !important;
@@ -123,43 +125,12 @@
     font-weight: 500;
 }
 
-.nce-wp-sync-form .btn-primary:hover {
+.nce-wp-sync-form .btn-primary:hover,
+.nce-wp-sync-form .btn-secondary:hover,
+.nce-wp-sync-form .btn-default:hover {
     background-color: var(--nce-primary-dark) !important;
     border-color: var(--nce-primary-dark) !important;
     color: var(--nce-charcoal) !important;
-}
-
-/* ========================================
-   Buttons - Secondary (Dark)
-   ======================================== */
-.nce-wp-sync-form .btn-secondary,
-.nce-wp-sync-form .btn-default {
-    background-color: var(--nce-charcoal);
-    border-color: var(--nce-charcoal);
-    color: var(--nce-white);
-    font-family: var(--nce-font-family);
-    font-weight: 500;
-}
-
-.nce-wp-sync-form .btn-secondary:hover,
-.nce-wp-sync-form .btn-default:hover {
-    background-color: var(--nce-graphite);
-    border-color: var(--nce-graphite);
-    color: var(--nce-white);
-}
-
-/* ========================================
-   Buttons - Outline
-   ======================================== */
-.nce-wp-sync-form .btn-outline-secondary {
-    border-color: var(--nce-charcoal);
-    color: var(--nce-charcoal);
-    font-family: var(--nce-font-family);
-}
-
-.nce-wp-sync-form .btn-outline-secondary:hover {
-    background-color: var(--nce-charcoal);
-    color: var(--nce-white);
 }
 
 /* ========================================
