@@ -257,7 +257,7 @@ function update_properties(frm) {
 }
 
 /**
- * Setup tab structure
+ * Setup Bootstrap tabs using Frappe's intended method
  */
 function setup_tabs(frm) {
     // Get the form wrapper
@@ -268,17 +268,17 @@ function setup_tabs(frm) {
         return;
     }
     
-    // Create tab navigation HTML
+    // Create tab navigation using Bootstrap standard HTML
     const tab_nav = $(`
         <div class="layout-editor-tabs" style="margin-bottom: 20px;">
-            <ul class="nav nav-tabs" role="tablist">
+            <ul class="nav nav-tabs" id="layout-editor-tabs" role="tablist">
                 <li class="nav-item">
-                    <a class="nav-link active" id="json-editor-tab-link" data-toggle="tab" href="#json-editor-tab" role="tab">
+                    <a class="nav-link active" id="json-editor-tab-link" data-toggle="tab" href="#json-editor-tab" role="tab" aria-controls="json-editor-tab" aria-selected="true">
                         📝 JSON Editor
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" id="visual-editor-tab-link" data-toggle="tab" href="#visual-editor-tab" role="tab">
+                    <a class="nav-link" id="visual-editor-tab-link" data-toggle="tab" href="#visual-editor-tab" role="tab" aria-controls="visual-editor-tab" aria-selected="false">
                         🎨 Visual Editor
                     </a>
                 </li>
@@ -289,10 +289,10 @@ function setup_tabs(frm) {
     // Create tab content containers
     const tab_content = $(`
         <div class="tab-content">
-            <div class="tab-pane fade show active" id="json-editor-tab" role="tabpanel">
+            <div class="tab-pane fade show active" id="json-editor-tab" role="tabpanel" aria-labelledby="json-editor-tab-link">
                 <!-- Original form content will be moved here -->
             </div>
-            <div class="tab-pane fade" id="visual-editor-tab" role="tabpanel">
+            <div class="tab-pane fade" id="visual-editor-tab" role="tabpanel" aria-labelledby="visual-editor-tab-link">
                 <div id="visual-editor-container" style="min-height: 600px; padding: 20px;">
                     <div class="text-muted text-center" style="padding: 100px 20px;">
                         <p><strong>Select a DocType and click "Load JSON"</strong></p>
@@ -315,19 +315,23 @@ function setup_tabs(frm) {
     // Append tab content
     form_wrapper.append(tab_content);
     
-    // Handle tab switching
-    tab_nav.find('a[data-toggle="tab"]').on('shown.bs.tab', function(e) {
+    // Initialize Bootstrap tabs using jQuery (THE FRAPPE WAY)
+    $('#layout-editor-tabs a').on('click', function (e) {
+        e.preventDefault(); // Prevent Frappe's routing system from interfering
+        $(this).tab('show'); // Use jQuery Bootstrap method to show tab
+    });
+    
+    // Listen for tab shown event to initialize Visual Editor
+    $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
         const target = $(e.target).attr('href');
-        
         if (target === '#visual-editor-tab') {
-            // Initialize Visual Editor when tab is shown
             initialize_visual_editor(frm);
         }
     });
 }
 
 /**
- * Initialize Visual Editor (called when Visual Editor tab is activated)
+ * Initialize Visual Editor when tab is shown
  */
 function initialize_visual_editor(frm) {
     if (!frm.doc.target_doctype) {

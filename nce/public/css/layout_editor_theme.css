@@ -567,7 +567,7 @@
 }
 
 /* ============================================
-   TAB NAVIGATION STYLES
+   TAB NAVIGATION STYLES (Bootstrap + Frappe)
    ============================================ */
 .layout-editor-tabs {
     margin-bottom: 20px;
@@ -594,6 +594,8 @@
     color: var(--le-color-gray-dark);
     background: transparent;
     transition: all 0.2s ease-in-out;
+    cursor: pointer;
+    text-decoration: none;
 }
 
 .layout-editor-tabs .nav-link:hover {
@@ -601,6 +603,7 @@
     color: var(--le-color-black);
     border-color: var(--le-color-gray-light);
     border-bottom: none;
+    text-decoration: none;
 }
 
 .layout-editor-tabs .nav-link.active {
