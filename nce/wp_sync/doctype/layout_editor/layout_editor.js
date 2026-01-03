@@ -1,14 +1,17 @@
 // Copyright (c) 2025, NCE and contributors
 // For license information, please see license.txt
 
+// Load Layout Editor theme CSS
+frappe.require('/assets/nce/css/layout_editor_theme.css');
+
 frappe.ui.form.on("Layout Editor", {
     refresh: function(frm) {
-        // Set instructions
+        // Set instructions using CSS classes instead of inline styles
         frm.set_df_property('instructions_html', 'options', `
-            <div style="padding: 10px; background: #f5f5f5; border-radius: 4px; margin-bottom: 10px;">
+            <div class="layout-editor-instructions">
                 <h4>📐 Layout Editor</h4>
                 <p>Edit DocType layouts that can't be changed in Customize Form:</p>
-                <ul style="margin: 5px 0; padding-left: 20px;">
+                <ul>
                     <li>Set field rows (height)</li>
                     <li>Move fields between tabs/sections</li>
                     <li>Reorder fields freely</li>
@@ -25,7 +28,7 @@ frappe.ui.form.on("Layout Editor", {
             if (!frm.custom_buttons["Update Properties"]) {
                 frm.add_custom_button(__("Update Properties"), function() {
                     update_properties(frm);
-                }).css({"background-color": "#28a745", "color": "white", "font-weight": "bold"});
+                }).addClass('btn-update-properties');
             }
         } else {
             // Remove button if it exists
@@ -111,13 +114,13 @@ frappe.ui.form.on("Layout Editor", {
                             message: r.message.message + '<br><br><strong>Click "Update Properties" button to apply changes.</strong>'
                         });
                     } else {
-                        // Validation failed - show all errors
+                        // Validation failed - show all errors using CSS classes
                         frm.doc.__validated = false;
                         frm.doc.__json_changed = true;
                         frm.refresh();
                         
-                        let error_html = '<div style="color: #d9534f;">';
-                        error_html += `<p><strong>${r.message.total_errors} error(s) found:</strong></p><ol style="margin: 10px 0; padding-left: 20px;">`;
+                        let error_html = '<div class="layout-editor-error">';
+                        error_html += `<p><strong>${r.message.total_errors} error(s) found:</strong></p><ol>`;
                         r.message.errors.forEach(function(err) {
                             error_html += '<li>' + err + '</li>';
                         });

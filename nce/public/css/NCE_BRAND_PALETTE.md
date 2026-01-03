@@ -1,5 +1,29 @@
 # NCE Brand Palette
 
+## Logo
+
+**Location**: `/assets/nce/images/nce_logo.png`
+
+**File**: `nce/public/images/nce_logo.png`
+
+**Usage in HTML**:
+```html
+<img src="/assets/nce/images/nce_logo.png" alt="NCE Logo" />
+```
+
+**Usage in CSS**:
+```css
+background-image: url('/assets/nce/images/nce_logo.png');
+```
+
+**Design Notes**:
+- Clean, modern lettermark design
+- Transparent background (PNG)
+- Works on light and dark backgrounds
+- Pairs with Charcoal (#231F20) or Citron (#D7DF23) backgrounds
+
+---
+
 ## Colors
 
 | Name         | Hex Code  | Usage                        |

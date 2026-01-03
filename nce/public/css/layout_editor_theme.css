@@ -1,0 +1,522 @@
+/*
+ * ============================================
+ * LAYOUT EDITOR THEME
+ * ============================================
+ * 
+ * REBRANDING INSTRUCTIONS:
+ * 1. Change colors in "Brand Tokens" section below
+ * 2. Change fonts in "Typography Tokens" section
+ * 3. All element styles automatically update
+ * 
+ * Element → Style Mapping documented in:
+ * docs/LAYOUT_EDITOR_THEME_GUIDE.md
+ * ============================================
+ */
+
+/* ============================================
+   BRAND TOKENS (CHANGE THESE FOR REBRANDING)
+   ============================================ */
+:root {
+    /* Primary Brand Colors */
+    --le-brand-primary: #D7DF23;        /* NCE Citron */
+    --le-brand-primary-dark: #b8bf1e;   /* Citron hover */
+    --le-brand-secondary: #231F20;       /* NCE Charcoal */
+    --le-brand-accent: #D7DF23;          /* Same as primary */
+    
+    /* Neutral Colors */
+    --le-color-white: #ffffff;
+    --le-color-black: #000000;
+    --le-color-gray-dark: #373536;       /* NCE Graphite */
+    --le-color-gray-medium: #D0CFCD;     /* NCE Medium Gray */
+    --le-color-gray-light: #E7E7E6;      /* NCE Silver */
+    
+    /* Background Colors - Desaturated Citron Tints */
+    --le-bg-citron-ultra-light: #f9fae8; /* 98% lightness, subtle citron */
+    --le-bg-citron-light: #f4f6d6;       /* 95% lightness */
+    --le-bg-citron-soft: #eef2c4;        /* 90% lightness */
+    
+    /* Typography */
+    --le-font-family: 'Poppins', Verdana, sans-serif;
+    --le-font-weight-normal: 400;
+    --le-font-weight-medium: 500;
+    --le-font-weight-bold: 600;
+}
+
+/* Import Google Font */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+/* ============================================
+   SEMANTIC TOKENS (MAPPED TO UI ELEMENTS)
+   ============================================ */
+:root {
+    /* === LAYOUT BACKGROUNDS === */
+    
+    /* Section Backgrounds (alternating) */
+    --le-section-bg-primary: var(--le-color-white);
+    --le-section-bg-alternate: var(--le-bg-citron-ultra-light);
+    
+    /* Column Backgrounds (within sections) */
+    --le-column-bg-base: transparent;
+    --le-column-bg-1: rgba(249, 250, 232, 0.3); /* Very subtle citron */
+    --le-column-bg-2: rgba(249, 250, 232, 0.5); /* Slightly more */
+    --le-column-bg-3: rgba(249, 250, 232, 0.7); /* Even more */
+    
+    /* === VISUAL PANEL === */
+    
+    /* Section Headers */
+    --le-section-header-bg: var(--le-brand-secondary);
+    --le-section-header-text: var(--le-color-white);
+    --le-section-header-accent: var(--le-brand-primary);
+    
+    /* Fields */
+    --le-field-bg: var(--le-color-white);
+    --le-field-border: var(--le-color-gray-medium);
+    --le-field-text: var(--le-brand-secondary);
+    
+    /* Selected/Active State */
+    --le-selected-border: var(--le-brand-primary);
+    --le-selected-glow: rgba(215, 223, 35, 0.3);
+    
+    /* Drag & Drop */
+    --le-drag-handle: var(--le-brand-primary);
+    --le-drop-zone-border: var(--le-brand-primary);
+    --le-drop-zone-bg: rgba(215, 223, 35, 0.1);
+    
+    /* Column Dividers */
+    --le-column-divider: var(--le-color-gray-medium);
+    
+    /* === PROPERTIES PANEL === */
+    
+    /* Panel Background */
+    --le-panel-bg: var(--le-color-gray-light);
+    --le-panel-border: var(--le-color-gray-medium);
+    
+    /* Form Controls */
+    --le-input-border: var(--le-color-gray-medium);
+    --le-input-focus: var(--le-brand-primary);
+    
+    /* === BUTTONS === */
+    
+    /* Primary Button (Validate, Save, Update Properties) */
+    --le-btn-primary-bg: var(--le-brand-primary);
+    --le-btn-primary-text: var(--le-brand-secondary);
+    --le-btn-primary-hover: var(--le-brand-primary-dark);
+    
+    /* Success Button (Update Properties - green variant) */
+    --le-btn-success-bg: #28a745;
+    --le-btn-success-text: var(--le-color-white);
+    --le-btn-success-hover: #218838;
+    
+    /* Secondary Button (Cancel, Load) */
+    --le-btn-secondary-bg: var(--le-color-white);
+    --le-btn-secondary-text: var(--le-brand-secondary);
+    --le-btn-secondary-border: var(--le-color-gray-medium);
+    
+    /* Danger Button (Delete) */
+    --le-btn-danger-bg: #dc3545;
+    --le-btn-danger-text: var(--le-color-white);
+    
+    /* === TABS === */
+    
+    --le-tab-inactive: var(--le-color-gray-dark);
+    --le-tab-active: var(--le-brand-secondary);
+    --le-tab-border-active: var(--le-brand-primary);
+    
+    /* === FIELD TYPE ICONS === */
+    
+    --le-icon-data: var(--le-brand-primary);
+    --le-icon-link: #0066cc;
+    --le-icon-number: #28a745;
+    --le-icon-date: #6f42c1;
+    --le-icon-select: #fd7e14;
+    --le-icon-check: var(--le-brand-primary);
+    --le-icon-table: #17a2b8;
+    
+    /* === MESSAGES & ALERTS === */
+    
+    --le-success-bg: #d4edda;
+    --le-success-border: #c3e6cb;
+    --le-success-text: #155724;
+    
+    --le-error-bg: #f8d7da;
+    --le-error-border: #f5c6cb;
+    --le-error-text: #721c24;
+    
+    --le-info-bg: var(--le-bg-citron-light);
+    --le-info-border: var(--le-brand-primary);
+    --le-info-text: var(--le-brand-secondary);
+}
+
+/* ============================================
+   ELEMENT STYLES
+   
+   These use the semantic tokens defined above.
+   See docs/LAYOUT_EDITOR_THEME_GUIDE.md for
+   complete element → style mapping.
+   ============================================ */
+
+/* === CURRENT LAYOUT EDITOR (JSON Editor View) === */
+
+/* Instructions Box */
+.layout-editor-instructions {
+    padding: 15px;
+    background: var(--le-info-bg);
+    border: 1px solid var(--le-info-border);
+    border-radius: 6px;
+    margin-bottom: 15px;
+    font-family: var(--le-font-family);
+}
+
+.layout-editor-instructions h4 {
+    color: var(--le-brand-secondary);
+    margin: 0 0 10px 0;
+    font-weight: var(--le-font-weight-bold);
+}
+
+.layout-editor-instructions p {
+    color: var(--le-info-text);
+    margin: 8px 0;
+}
+
+.layout-editor-instructions ul {
+    margin: 8px 0;
+    padding-left: 25px;
+    color: var(--le-info-text);
+}
+
+.layout-editor-instructions li {
+    margin: 4px 0;
+}
+
+.layout-editor-instructions strong {
+    color: var(--le-brand-secondary);
+}
+
+/* Update Properties Button (Success style) */
+.btn-update-properties {
+    background-color: var(--le-btn-success-bg) !important;
+    color: var(--le-btn-success-text) !important;
+    font-weight: var(--le-font-weight-bold) !important;
+    border: none !important;
+}
+
+.btn-update-properties:hover {
+    background-color: var(--le-btn-success-hover) !important;
+}
+
+/* Validation Error Messages */
+.layout-editor-error {
+    color: var(--le-error-text);
+    padding: 12px;
+    background: var(--le-error-bg);
+    border: 1px solid var(--le-error-border);
+    border-radius: 4px;
+    margin: 10px 0;
+}
+
+.layout-editor-error p {
+    margin: 8px 0;
+}
+
+.layout-editor-error ol {
+    margin: 10px 0;
+    padding-left: 25px;
+}
+
+.layout-editor-error li {
+    margin: 6px 0;
+}
+
+/* === FUTURE VISUAL EDITOR === */
+
+/* Main Layout */
+.layout-editor-container {
+    display: flex;
+    height: calc(100vh - 150px);
+    min-height: 600px;
+    font-family: var(--le-font-family);
+}
+
+/* Visual Panel (Left Side) */
+.layout-editor-visual-panel {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    background: var(--le-color-white);
+    border-right: 1px solid var(--le-panel-border);
+}
+
+/* Properties Panel (Right Side) */
+.layout-editor-properties-panel {
+    width: 350px;
+    overflow-y: auto;
+    padding: 20px;
+    background: var(--le-panel-bg);
+    border-left: 1px solid var(--le-panel-border);
+}
+
+/* Section Container */
+.le-section {
+    margin-bottom: 20px;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.le-section:nth-child(odd) {
+    background: var(--le-section-bg-primary);
+}
+
+.le-section:nth-child(even) {
+    background: var(--le-section-bg-alternate);
+}
+
+/* Section Header */
+.le-section-header {
+    background: var(--le-section-header-bg);
+    color: var(--le-section-header-text);
+    border-left: 4px solid var(--le-section-header-accent);
+    padding: 12px 15px;
+    font-weight: var(--le-font-weight-medium);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+}
+
+.le-section-header:hover {
+    background: var(--le-color-gray-dark);
+}
+
+.le-section-header-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.le-section-controls {
+    display: flex;
+    gap: 8px;
+}
+
+/* Section Body */
+.le-section-body {
+    padding: 15px;
+}
+
+/* Columns */
+.le-columns {
+    display: flex;
+    gap: 15px;
+}
+
+.le-column {
+    flex: 1;
+    min-width: 0;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+.le-column:nth-child(1) { background: var(--le-column-bg-1); }
+.le-column:nth-child(2) { background: var(--le-column-bg-2); }
+.le-column:nth-child(3) { background: var(--le-column-bg-3); }
+
+.le-column-divider {
+    border-right: 2px solid var(--le-column-divider);
+    margin: 0 -7px;
+}
+
+/* Fields */
+.le-field {
+    background: var(--le-field-bg);
+    border: 1px solid var(--le-field-border);
+    color: var(--le-field-text);
+    padding: 10px 12px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.le-field:hover {
+    border-color: var(--le-selected-border);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.le-field.selected {
+    border: 2px solid var(--le-selected-border);
+    box-shadow: 0 0 0 3px var(--le-selected-glow);
+}
+
+.le-field-icon {
+    font-size: 18px;
+}
+
+.le-field-label {
+    flex: 1;
+    font-weight: var(--le-font-weight-medium);
+}
+
+.le-field-required::after {
+    content: "*";
+    color: var(--le-btn-danger-bg);
+    margin-left: 4px;
+}
+
+/* Drag Handle */
+.le-drag-handle {
+    color: var(--le-drag-handle);
+    cursor: grab;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.le-drag-handle:hover {
+    opacity: 1;
+}
+
+.le-drag-handle:active {
+    cursor: grabbing;
+}
+
+/* Drop Zones */
+.le-drop-zone {
+    border: 2px dashed transparent;
+    padding: 8px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    min-height: 40px;
+}
+
+.le-drop-zone.active {
+    border-color: var(--le-drop-zone-border);
+    background: var(--le-drop-zone-bg);
+}
+
+/* Tabs */
+.le-tabs {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid var(--le-color-gray-medium);
+}
+
+.le-tab {
+    padding: 10px 20px;
+    color: var(--le-tab-inactive);
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    font-weight: var(--le-font-weight-medium);
+    transition: all 0.2s;
+}
+
+.le-tab:hover {
+    color: var(--le-tab-active);
+    background: rgba(0, 0, 0, 0.02);
+}
+
+.le-tab.active {
+    color: var(--le-tab-active);
+    border-bottom-color: var(--le-tab-border-active);
+}
+
+/* Buttons */
+.le-btn {
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-family: var(--le-font-family);
+    font-weight: var(--le-font-weight-medium);
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+}
+
+.le-btn-primary {
+    background: var(--le-btn-primary-bg);
+    color: var(--le-btn-primary-text);
+}
+
+.le-btn-primary:hover {
+    background: var(--le-btn-primary-hover);
+}
+
+.le-btn-secondary {
+    background: var(--le-btn-secondary-bg);
+    color: var(--le-btn-secondary-text);
+    border: 1px solid var(--le-btn-secondary-border);
+}
+
+.le-btn-secondary:hover {
+    background: var(--le-color-gray-light);
+}
+
+.le-btn-danger {
+    background: var(--le-btn-danger-bg);
+    color: var(--le-btn-danger-text);
+}
+
+.le-btn-danger:hover {
+    background: #c82333;
+}
+
+/* Form Inputs (Properties Panel) */
+.le-input,
+.le-select,
+.le-textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--le-input-border);
+    border-radius: 4px;
+    font-family: var(--le-font-family);
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.le-input:focus,
+.le-select:focus,
+.le-textarea:focus {
+    outline: none;
+    border-color: var(--le-input-focus);
+    box-shadow: 0 0 0 2px var(--le-selected-glow);
+}
+
+/* Field Type Icons */
+.le-icon-data { color: var(--le-icon-data); }
+.le-icon-link { color: var(--le-icon-link); }
+.le-icon-number { color: var(--le-icon-number); }
+.le-icon-date { color: var(--le-icon-date); }
+.le-icon-select { color: var(--le-icon-select); }
+.le-icon-check { color: var(--le-icon-check); }
+.le-icon-table { color: var(--le-icon-table); }
+
+/* Utility Classes */
+.le-mb-10 { margin-bottom: 10px; }
+.le-mb-15 { margin-bottom: 15px; }
+.le-mb-20 { margin-bottom: 20px; }
+.le-mt-10 { margin-top: 10px; }
+.le-mt-15 { margin-top: 15px; }
+.le-mt-20 { margin-top: 20px; }
+
+/* Responsive */
+@media (max-width: 1200px) {
+    .layout-editor-properties-panel {
+        width: 300px;
+    }
+}
+
+@media (max-width: 992px) {
+    .layout-editor-container {
+        flex-direction: column;
+    }
+    
+    .layout-editor-properties-panel {
+        width: 100%;
+        border-left: none;
+        border-top: 1px solid var(--le-panel-border);
+    }
+}
+
