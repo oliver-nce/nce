@@ -309,6 +309,125 @@ def get_property_type(value):
         return "Data"
 
 
+@frappe.whitelist()
+def save_field_changes(doctype_name, changes):
+    """
+    Save field property changes via Property Setters
+    
+    Args:
+        doctype_name: Name of the DocType
+        changes: Dict like { fieldname: { property: value, ... }, ... }
+    
+    Returns:
+        Success message with count of changes applied
+    """
+    if not doctype_name:
+        frappe.throw("DocType name is required")
+    
+    if not changes:
+        return {"success": False, "message": "No changes provided"}
+    
+    # Parse if string
+    if isinstance(changes, str):
+        try:
+            changes = json.loads(changes)
+        except json.JSONDecodeError as e:
+            frappe.throw(f"Invalid changes JSON: {str(e)}")
+    
+    # Get current meta to verify fields exist
+    try:
+        base_meta = frappe.get_meta(doctype_name)
+    except Exception as e:
+        frappe.throw(f"Cannot load DocType '{doctype_name}': {str(e)}")
+    
+    base_fieldnames = {f.fieldname: f for f in base_meta.fields}
+    
+    # Track changes
+    created_count = 0
+    updated_count = 0
+    errors = []
+    
+    # Apply changes for each field
+    for fieldname, properties in changes.items():
+        # Verify field exists
+        if fieldname not in base_fieldnames:
+            errors.append(f"Field '{fieldname}' not found in {doctype_name}")
+            continue
+        
+        base_field = base_fieldnames[fieldname]
+        
+        # Apply each property change
+        for prop, value in properties.items():
+            # Skip fieldname and fieldtype (can't be changed via Property Setter)
+            if prop in ["fieldname", "fieldtype"]:
+                continue
+            
+            try:
+                # Check if Property Setter already exists
+                existing = frappe.db.exists("Property Setter", {
+                    "doc_type": doctype_name,
+                    "field_name": fieldname,
+                    "property": prop
+                })
+                
+                if existing:
+                    # Update existing Property Setter
+                    ps = frappe.get_doc("Property Setter", existing)
+                    old_value = ps.value
+                    ps.value = str(value)
+                    ps.property_type = get_property_type(value)
+                    ps.save()
+                    updated_count += 1
+                    frappe.logger().info(f"Updated {doctype_name}.{fieldname}.{prop}: {old_value} → {value}")
+                else:
+                    # Create new Property Setter
+                    ps = frappe.get_doc({
+                        "doctype": "Property Setter",
+                        "doctype_or_field": "DocField",
+                        "doc_type": doctype_name,
+                        "field_name": fieldname,
+                        "property": prop,
+                        "value": str(value),
+                        "property_type": get_property_type(value)
+                    })
+                    ps.insert()
+                    created_count += 1
+                    frappe.logger().info(f"Created {doctype_name}.{fieldname}.{prop} = {value}")
+                    
+            except Exception as e:
+                errors.append(f"Error setting {fieldname}.{prop}: {str(e)}")
+                frappe.logger().error(f"Property Setter error: {str(e)}")
+    
+    # Commit changes
+    frappe.db.commit()
+    
+    # Clear cache to reflect changes immediately
+    frappe.clear_cache(doctype=doctype_name)
+    
+    # Build response
+    total_changes = created_count + updated_count
+    message = f"✅ Saved {total_changes} change(s)"
+    
+    if created_count > 0:
+        message += f" ({created_count} new)"
+    if updated_count > 0:
+        message += f" ({updated_count} updated)"
+    
+    response = {
+        "success": True,
+        "message": message,
+        "created": created_count,
+        "updated": updated_count,
+        "total": total_changes
+    }
+    
+    if errors:
+        response["errors"] = errors
+        response["success"] = False if total_changes == 0 else True
+    
+    return response
+
+
 def build_structure_preview(fields):
     """Build an HTML preview of the layout structure"""
     html = ['<div style="font-family: monospace; font-size: 12px; line-height: 1.6;">']

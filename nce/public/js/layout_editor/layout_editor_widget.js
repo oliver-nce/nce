@@ -37,7 +37,8 @@ class LayoutEditorWidget {
         );
         
         this.propertiesPanel = new LayoutEditorPropertiesPanel(
-            this.propertiesPanelEl
+            this.propertiesPanelEl,
+            this.dataManager
         );
         
         this.dragDropHandler = new LayoutEditorDragDropHandler(
@@ -69,6 +70,13 @@ class LayoutEditorWidget {
         // Clear existing content
         this.container.innerHTML = '';
         
+        // Create toolbar
+        this.toolbarEl = document.createElement('div');
+        this.toolbarEl.className = 'layout-editor-toolbar';
+        this.container.appendChild(this.toolbarEl);
+        
+        this.createToolbar();
+        
         // Create main wrapper
         const wrapper = document.createElement('div');
         wrapper.className = 'layout-editor-container';
@@ -84,6 +92,119 @@ class LayoutEditorWidget {
         wrapper.appendChild(this.propertiesPanelEl);
         
         this.container.appendChild(wrapper);
+    }
+    
+    /**
+     * Create toolbar with save button
+     */
+    createToolbar() {
+        // Save button
+        this.saveBtn = document.createElement('button');
+        this.saveBtn.className = 'btn btn-primary btn-sm';
+        this.saveBtn.textContent = '💾 Save Changes';
+        this.saveBtn.style.marginRight = '10px';
+        this.saveBtn.disabled = true;
+        this.saveBtn.addEventListener('click', () => {
+            this.saveChanges();
+        });
+        this.toolbarEl.appendChild(this.saveBtn);
+        
+        // Status indicator
+        this.statusEl = document.createElement('span');
+        this.statusEl.className = 'layout-editor-status';
+        this.statusEl.textContent = 'No changes';
+        this.statusEl.style.color = '#999';
+        this.statusEl.style.marginLeft = '10px';
+        this.toolbarEl.appendChild(this.statusEl);
+        
+        // Setup change tracking
+        this.dataManager.setOnChangeCallback(() => {
+            this.onDataChanged();
+        });
+    }
+    
+    /**
+     * Handle data changes
+     */
+    onDataChanged() {
+        this.saveBtn.disabled = false;
+        this.statusEl.textContent = '● Unsaved changes';
+        this.statusEl.style.color = '#ff9800';
+    }
+    
+    /**
+     * Save changes to backend
+     */
+    async saveChanges() {
+        if (!this.dataManager.hasChanges()) {
+            LayoutEditorUtils.showAlert('No changes to save', 'blue');
+            return;
+        }
+        
+        try {
+            // Disable save button during save
+            this.saveBtn.disabled = true;
+            this.statusEl.textContent = 'Saving...';
+            this.statusEl.style.color = '#2196f3';
+            
+            const changes = this.dataManager.getChanges();
+            console.log('Saving changes:', changes);
+            
+            // Call backend to save
+            const response = await new Promise((resolve, reject) => {
+                frappe.call({
+                    method: 'nce.wp_sync.doctype.layout_editor.layout_editor.save_field_changes',
+                    args: {
+                        doctype_name: this.currentDocType,
+                        changes: changes
+                    },
+                    callback: (r) => {
+                        if (r.message) {
+                            resolve(r.message);
+                        } else {
+                            reject(new Error('No response from server'));
+                        }
+                    },
+                    error: (err) => {
+                        reject(err);
+                    }
+                });
+            });
+            
+            // Clear changes
+            this.dataManager.clearChanges();
+            
+            // Update UI
+            this.saveBtn.disabled = true;
+            this.statusEl.textContent = '✓ All changes saved';
+            this.statusEl.style.color = '#4caf50';
+            
+            LayoutEditorUtils.showSuccess(
+                `Saved ${Object.keys(changes).length} field(s)`,
+                'Changes Saved'
+            );
+            
+            // Reset status after 3 seconds
+            setTimeout(() => {
+                if (!this.dataManager.hasChanges()) {
+                    this.statusEl.textContent = 'No changes';
+                    this.statusEl.style.color = '#999';
+                }
+            }, 3000);
+            
+        } catch (error) {
+            console.error('Save error:', error);
+            
+            // Re-enable save button
+            this.saveBtn.disabled = false;
+            this.statusEl.textContent = '● Unsaved changes';
+            this.statusEl.style.color = '#ff9800';
+            
+            LayoutEditorUtils.showError(
+                `Failed to save: ${error.message}`,
+                'Save Error'
+            );
+        }
     }
     
     /**

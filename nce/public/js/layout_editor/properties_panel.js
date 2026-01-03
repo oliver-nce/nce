@@ -4,8 +4,9 @@
  */
 
 class LayoutEditorPropertiesPanel {
-    constructor(container) {
+    constructor(container, dataManager) {
         this.container = container;
+        this.dataManager = dataManager;
         this.currentField = null;
         this.utils = LayoutEditorUtils;
     }
@@ -222,9 +223,10 @@ class LayoutEditorPropertiesPanel {
             inputEl.value = value;
         }
         
-        // Change handler (placeholder for now)
+        // Change handler
         inputEl.addEventListener('change', (e) => {
-            this.onPropertyChange(propName, e.target.value, type);
+            const value = type === 'checkbox' ? e.target.checked : e.target.value;
+            this.onPropertyChange(propName, value, type);
         });
         
         propDiv.appendChild(inputEl);
@@ -290,38 +292,97 @@ class LayoutEditorPropertiesPanel {
     }
     
     /**
-     * Handle property change (placeholder)
+     * Handle property change
      */
     onPropertyChange(propName, value, type) {
+        if (!this.currentField) return;
+        
         console.log('Property changed:', propName, value);
-        // TODO: Update data model and mark as changed
+        
+        // Update in data manager
+        this.dataManager.updateFieldProperty(
+            this.currentField.fieldname,
+            propName,
+            value
+        );
+        
+        // Show feedback
+        this.utils.showAlert(`Updated ${propName}`, 'green');
     }
     
     /**
      * Toggle hidden state
      */
     toggleHidden() {
-        console.log('Toggle hidden for:', this.currentField.fieldname);
-        // TODO: Implement
-        this.utils.showAlert('Quick actions coming in Phase 2', 'blue');
+        if (!this.currentField) return;
+        
+        const newValue = this.currentField.hidden ? 0 : 1;
+        this.dataManager.updateFieldProperty(
+            this.currentField.fieldname,
+            'hidden',
+            newValue
+        );
+        
+        // Update current field reference
+        this.currentField.hidden = newValue;
+        
+        // Re-render to update button text
+        this.displayField(this.currentField);
+        
+        this.utils.showSuccess(
+            `Field ${newValue ? 'hidden' : 'shown'}`,
+            'Quick Action'
+        );
     }
     
     /**
      * Toggle required state
      */
     toggleRequired() {
-        console.log('Toggle required for:', this.currentField.fieldname);
-        // TODO: Implement
-        this.utils.showAlert('Quick actions coming in Phase 2', 'blue');
+        if (!this.currentField) return;
+        
+        const newValue = this.currentField.reqd ? 0 : 1;
+        this.dataManager.updateFieldProperty(
+            this.currentField.fieldname,
+            'reqd',
+            newValue
+        );
+        
+        // Update current field reference
+        this.currentField.reqd = newValue;
+        
+        // Re-render to update button text
+        this.displayField(this.currentField);
+        
+        this.utils.showSuccess(
+            `Field ${newValue ? 'required' : 'optional'}`,
+            'Quick Action'
+        );
     }
     
     /**
      * Toggle read only state
      */
     toggleReadOnly() {
-        console.log('Toggle read only for:', this.currentField.fieldname);
-        // TODO: Implement
-        this.utils.showAlert('Quick actions coming in Phase 2', 'blue');
+        if (!this.currentField) return;
+        
+        const newValue = this.currentField.read_only ? 0 : 1;
+        this.dataManager.updateFieldProperty(
+            this.currentField.fieldname,
+            'read_only',
+            newValue
+        );
+        
+        // Update current field reference
+        this.currentField.read_only = newValue;
+        
+        // Re-render to update button text
+        this.displayField(this.currentField);
+        
+        this.utils.showSuccess(
+            `Field ${newValue ? 'read-only' : 'editable'}`,
+            'Quick Action'
+        );
     }
 }
 

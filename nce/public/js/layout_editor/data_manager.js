@@ -12,6 +12,9 @@ class LayoutEditorDataManager {
         };
         this.doctype = null;
         this.fieldTypes = new LayoutEditorFieldTypes();
+        this.changes = {}; // Track changes: { fieldname: { property: value } }
+        this.hasUnsavedChanges = false;
+        this.onChangeCallback = null;
     }
     
     /**
@@ -259,7 +262,80 @@ class LayoutEditorDataManager {
         
         return stats;
     }
+    
+    /**
+     * Update a field property
+     */
+    updateFieldProperty(fieldname, property, value) {
+        // Find the field
+        const field = this.getField(fieldname);
+        if (!field) {
+            console.error('Field not found:', fieldname);
+            return false;
+        }
+        
+        // Convert checkbox values
+        if (typeof value === 'boolean') {
+            value = value ? 1 : 0;
+        }
+        
+        // Update the field
+        field[property] = value;
+        
+        // Track the change
+        if (!this.changes[fieldname]) {
+            this.changes[fieldname] = {};
+        }
+        this.changes[fieldname][property] = value;
+        
+        this.hasUnsavedChanges = true;
+        
+        // Trigger callback
+        if (this.onChangeCallback) {
+            this.onChangeCallback(fieldname, property, value);
+        }
+        
+        console.log(`Updated ${fieldname}.${property} = ${value}`);
+        return true;
+    }
+    
+    /**
+     * Get all changes
+     */
+    getChanges() {
+        return this.changes;
+    }
+    
+    /**
+     * Clear changes (after save)
+     */
+    clearChanges() {
+        this.changes = {};
+        this.hasUnsavedChanges = false;
+    }
+    
+    /**
+     * Check if there are unsaved changes
+     */
+    hasChanges() {
+        return this.hasUnsavedChanges;
+    }
+    
+    /**
+     * Set change callback
+     */
+    setOnChangeCallback(callback) {
+        this.onChangeCallback = callback;
+    }
+    
+    /**
+     * Get updated fields JSON for saving
+     */
+    getUpdatedFieldsJSON() {
+        return JSON.stringify(this.rawFields, null, 2);
+    }
 }
+
 
 // Export as global
 window.LayoutEditorDataManager = LayoutEditorDataManager;

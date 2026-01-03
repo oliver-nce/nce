@@ -527,6 +527,26 @@
 .le-mt-15 { margin-top: 15px; }
 .le-mt-20 { margin-top: 20px; }
 
+/* ============================================
+   TOOLBAR STYLES
+   ============================================ */
+.layout-editor-toolbar {
+    padding: 15px 20px;
+    background: var(--le-color-white);
+    border-bottom: 2px solid var(--le-brand-primary);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.layout-editor-status {
+    font-size: 14px;
+    font-weight: var(--le-font-weight-medium);
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
 /* Responsive */
 @media (max-width: 1200px) {
     .layout-editor-properties-panel {
