@@ -4,6 +4,18 @@
 // Load Layout Editor theme CSS
 frappe.require('/assets/nce/css/layout_editor_theme.css');
 
+// Load modular JavaScript components
+frappe.require('/assets/nce/js/layout_editor/utils.js');
+frappe.require('/assets/nce/js/layout_editor/field_types.js');
+frappe.require('/assets/nce/js/layout_editor/data_manager.js');
+frappe.require('/assets/nce/js/layout_editor/visual_renderer.js');
+frappe.require('/assets/nce/js/layout_editor/properties_panel.js');
+frappe.require('/assets/nce/js/layout_editor/drag_drop_handler.js');
+frappe.require('/assets/nce/js/layout_editor/layout_editor_widget.js');
+
+// Global widget instance
+let layoutEditorWidget = null;
+
 frappe.ui.form.on("Layout Editor", {
     refresh: function(frm) {
         // Set instructions using CSS classes instead of inline styles
@@ -20,8 +32,16 @@ frappe.ui.form.on("Layout Editor", {
                     <li>Change field properties</li>
                 </ul>
                 <p><strong>Workflow:</strong> Load JSON → Edit → Validate → Update Properties</p>
+                <p><strong>🎨 NEW:</strong> Click "Visual Editor" button to use drag-and-drop interface</p>
             </div>
         `);
+        
+        // Add Visual Editor button
+        if (!frm.custom_buttons["Visual Editor"]) {
+            frm.add_custom_button(__("Visual Editor"), function() {
+                launch_visual_editor(frm);
+            }).addClass('le-btn-primary');
+        }
         
         // Show "Update Properties" button if validated and not changed
         if (frm.doc.__validated && !frm.doc.__json_changed) {
@@ -235,6 +255,55 @@ function update_properties(frm) {
             });
         }
     );
+}
+
+/**
+ * Launch Visual Editor
+ */
+function launch_visual_editor(frm) {
+    if (!frm.doc.target_doctype) {
+        frappe.msgprint("Please select a DocType first");
+        return;
+    }
+    
+    // Create dialog for visual editor
+    const dialog = new frappe.ui.Dialog({
+        title: `Visual Editor - ${frm.doc.target_doctype}`,
+        size: 'extra-large',
+        fields: [
+            {
+                fieldname: 'visual_editor_container',
+                fieldtype: 'HTML'
+            }
+        ],
+        primary_action_label: 'Close',
+        primary_action: function() {
+            dialog.hide();
+            if (layoutEditorWidget) {
+                layoutEditorWidget.destroy();
+                layoutEditorWidget = null;
+            }
+        }
+    });
+    
+    dialog.show();
+    dialog.$wrapper.addClass('layout-editor-dialog');
+    
+    // Get container
+    const container = dialog.fields_dict.visual_editor_container.$wrapper[0];
+    
+    // Initialize widget
+    layoutEditorWidget = new LayoutEditorWidget({
+        frm: frm,
+        container: container,
+        mode: 'visual'
+    });
+    
+    // Initialize and load
+    layoutEditorWidget.initialize().then(() => {
+        // Auto-load the selected DocType
+        layoutEditorWidget.loadDocType(frm.doc.target_doctype);
+    });
 }
 
 
