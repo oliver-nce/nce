@@ -272,13 +272,19 @@ def update_properties(doctype_name, json_str):
                     updated_count += 1
                 else:
                     # Create new
+                    # Get fieldtype for applied_on field
+                    fieldtype = field.get("fieldtype")
+                    if not fieldtype and base_field:
+                        fieldtype = base_field.fieldtype
+                    
                     frappe.get_doc({
                         "doctype": "Property Setter",
                         "doc_type": doctype_name,
                         "field_name": fieldname,
                         "property": prop,
                         "value": str(value),
-                        "property_type": get_property_type(value)
+                        "property_type": get_property_type(value),
+                        "applied_on": fieldtype or "Data"  # Required field
                     }).insert()
                     created_count += 1
     
