@@ -274,12 +274,12 @@ def update_properties(doctype_name, json_str):
                     # Create new Property Setter
                     frappe.get_doc({
                         "doctype": "Property Setter",
+                        "doctype_or_field": "DocField",  # Required: indicates this is a field property
                         "doc_type": doctype_name,
                         "field_name": fieldname,
                         "property": prop,
                         "value": str(value),
-                        "property_type": get_property_type(value),
-                        "applied_on": "DocField"  # Required: indicates this is a field property
+                        "property_type": get_property_type(value)
                     }).insert()
                     created_count += 1
     
