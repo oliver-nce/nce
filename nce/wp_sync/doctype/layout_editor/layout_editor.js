@@ -18,6 +18,12 @@ let layoutEditorWidget = null;
 
 frappe.ui.form.on("Layout Editor", {
     refresh: function(frm) {
+        // Initialize tabs if not already done
+        if (!frm._tabs_initialized) {
+            setup_tabs(frm);
+            frm._tabs_initialized = true;
+        }
+        
         // Set instructions using CSS classes instead of inline styles
         frm.set_df_property('instructions_html', 'options', `
             <div class="layout-editor-instructions">
@@ -32,16 +38,9 @@ frappe.ui.form.on("Layout Editor", {
                     <li>Change field properties</li>
                 </ul>
                 <p><strong>Workflow:</strong> Load JSON → Edit → Validate → Update Properties</p>
-                <p><strong>🎨 NEW:</strong> Click "Visual Editor" button to use drag-and-drop interface</p>
+                <p><strong>🎨 NEW:</strong> Switch to "Visual Editor" tab for drag-and-drop interface</p>
             </div>
         `);
-        
-        // Add Visual Editor button
-        if (!frm.custom_buttons["Visual Editor"]) {
-            frm.add_custom_button(__("Visual Editor"), function() {
-                launch_visual_editor(frm);
-            }).addClass('le-btn-primary');
-        }
         
         // Show "Update Properties" button if validated and not changed
         if (frm.doc.__validated && !frm.doc.__json_changed) {
@@ -258,39 +257,100 @@ function update_properties(frm) {
 }
 
 /**
- * Launch Visual Editor
+ * Setup tab structure
  */
-function launch_visual_editor(frm) {
-    if (!frm.doc.target_doctype) {
-        frappe.msgprint("Please select a DocType first");
+function setup_tabs(frm) {
+    // Get the form wrapper
+    const form_wrapper = frm.$wrapper.find('.form-layout');
+    
+    // Check if tabs already exist
+    if (form_wrapper.find('.layout-editor-tabs').length > 0) {
         return;
     }
     
-    // Create dialog for visual editor
-    const dialog = new frappe.ui.Dialog({
-        title: `Visual Editor - ${frm.doc.target_doctype}`,
-        size: 'extra-large',
-        fields: [
-            {
-                fieldname: 'visual_editor_container',
-                fieldtype: 'HTML'
-            }
-        ],
-        primary_action_label: 'Close',
-        primary_action: function() {
-            dialog.hide();
-            if (layoutEditorWidget) {
-                layoutEditorWidget.destroy();
-                layoutEditorWidget = null;
-            }
-        }
+    // Create tab navigation HTML
+    const tab_nav = $(`
+        <div class="layout-editor-tabs" style="margin-bottom: 20px;">
+            <ul class="nav nav-tabs" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" id="json-editor-tab-link" data-toggle="tab" href="#json-editor-tab" role="tab">
+                        📝 JSON Editor
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="visual-editor-tab-link" data-toggle="tab" href="#visual-editor-tab" role="tab">
+                        🎨 Visual Editor
+                    </a>
+                </li>
+            </ul>
+        </div>
+    `);
+    
+    // Create tab content containers
+    const tab_content = $(`
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="json-editor-tab" role="tabpanel">
+                <!-- Original form content will be moved here -->
+            </div>
+            <div class="tab-pane fade" id="visual-editor-tab" role="tabpanel">
+                <div id="visual-editor-container" style="min-height: 600px; padding: 20px;">
+                    <div class="text-muted text-center" style="padding: 100px 20px;">
+                        <p><strong>Select a DocType and click "Load JSON"</strong></p>
+                        <p>Then switch to this tab to use the Visual Editor</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `);
+    
+    // Insert tabs before form content
+    form_wrapper.prepend(tab_nav);
+    
+    // Move existing form fields into Tab 1
+    const json_editor_container = tab_content.find('#json-editor-tab');
+    form_wrapper.find('.frappe-control').each(function() {
+        json_editor_container.append($(this));
     });
     
-    dialog.show();
-    dialog.$wrapper.addClass('layout-editor-dialog');
+    // Append tab content
+    form_wrapper.append(tab_content);
+    
+    // Handle tab switching
+    tab_nav.find('a[data-toggle="tab"]').on('shown.bs.tab', function(e) {
+        const target = $(e.target).attr('href');
+        
+        if (target === '#visual-editor-tab') {
+            // Initialize Visual Editor when tab is shown
+            initialize_visual_editor(frm);
+        }
+    });
+}
+
+/**
+ * Initialize Visual Editor (called when Visual Editor tab is activated)
+ */
+function initialize_visual_editor(frm) {
+    if (!frm.doc.target_doctype) {
+        const container = $('#visual-editor-container');
+        container.html(`
+            <div class="text-muted text-center" style="padding: 100px 20px;">
+                <p><strong>⚠️ Please select a DocType first</strong></p>
+                <p>Go back to the JSON Editor tab and select a DocType, then click "Load JSON"</p>
+            </div>
+        `);
+        return;
+    }
+    
+    // Check if already initialized
+    if (layoutEditorWidget && layoutEditorWidget.isInitialized) {
+        return;
+    }
     
     // Get container
-    const container = dialog.fields_dict.visual_editor_container.$wrapper[0];
+    const container = document.getElementById('visual-editor-container');
+    
+    // Clear placeholder content
+    container.innerHTML = '';
     
     // Initialize widget
     layoutEditorWidget = new LayoutEditorWidget({
