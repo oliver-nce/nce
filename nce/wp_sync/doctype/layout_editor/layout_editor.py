@@ -12,44 +12,39 @@ class LayoutEditor(Document):
 
 @frappe.whitelist()
 def load_doctype_json(doctype_name):
-    """Load the fields JSON for a DocType"""
+    """Load the fields JSON for a DocType - includes ALL properties from base + Property Setters"""
     if not doctype_name:
         frappe.throw("Please select a DocType")
     
     meta = frappe.get_meta(doctype_name)
     
-    # Build a clean fields structure
+    # Build a complete fields structure with ALL properties
     fields = []
     for field in meta.fields:
-        field_dict = {
-            "fieldname": field.fieldname,
-            "fieldtype": field.fieldtype,
-            "label": field.label or ""
-        }
+        # Get all field properties as dict
+        field_dict = field.as_dict()
         
-        # Add optional properties if they have values
-        if field.options:
-            field_dict["options"] = field.options
-        if field.reqd:
-            field_dict["reqd"] = 1
-        if field.read_only:
-            field_dict["read_only"] = 1
-        if field.hidden:
-            field_dict["hidden"] = 1
-        if field.default:
-            field_dict["default"] = field.default
-        if field.description:
-            field_dict["description"] = field.description
-        if field.depends_on:
-            field_dict["depends_on"] = field.depends_on
-        if field.collapsible:
-            field_dict["collapsible"] = 1
-        if field.unique:
-            field_dict["unique"] = 1
-        if field.in_list_view:
-            field_dict["in_list_view"] = 1
-        if field.in_standard_filter:
-            field_dict["in_standard_filter"] = 1
+        # Remove metadata fields that aren't needed for layout
+        remove_keys = [
+            'name', 'owner', 'creation', 'modified', 'modified_by', 
+            'docstatus', 'parent', 'parentfield', 'parenttype', 
+            'idx', 'doctype', '__islocal', '__onload', '__unsaved'
+        ]
+        for key in remove_keys:
+            field_dict.pop(key, None)
+        
+        # Ensure essential fields are present
+        if not field_dict.get("fieldname"):
+            continue
+        if not field_dict.get("fieldtype"):
+            continue
+            
+        # Clean up - remove None/empty values for cleaner JSON
+        field_dict = {k: v for k, v in field_dict.items() if v not in [None, "", 0, []]}
+        
+        # But ensure label exists (can be empty string)
+        if "label" not in field_dict:
+            field_dict["label"] = ""
             
         fields.append(field_dict)
     
@@ -60,7 +55,9 @@ def load_doctype_json(doctype_name):
         "fields": fields,
         "fields_json": json.dumps(fields, indent=4),
         "structure_html": structure,
-        "doctype_name": doctype_name
+        "doctype_name": doctype_name,
+        "total_fields": len(fields),
+        "source": "Customized version (base JSON + Property Setters merged)"
     }
 
 
@@ -173,5 +170,7 @@ def build_structure_preview(fields):
     
     html.append('</div>')
     return "\n".join(html)
+
+
 
 
