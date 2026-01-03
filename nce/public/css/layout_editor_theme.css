@@ -532,11 +532,20 @@
    ============================================ */
 .layout-editor-toolbar {
     padding: 15px 20px;
-    background: var(--le-color-white);
-    border-bottom: 2px solid var(--le-brand-primary);
+    background: linear-gradient(135deg, var(--le-bg-citron-soft) 0%, var(--le-bg-citron-light) 100%);
+    border: 2px solid var(--le-brand-primary);
+    border-radius: 8px;
+    margin-bottom: 15px;
     display: flex;
     align-items: center;
     gap: 15px;
+    box-shadow: 0 2px 8px rgba(215, 223, 35, 0.2);
+}
+
+.layout-editor-toolbar .btn {
+    font-weight: var(--le-font-weight-bold);
+    padding: 8px 20px;
+    font-size: 14px;
 }
 
 .layout-editor-status {
@@ -545,6 +554,26 @@
     display: inline-flex;
     align-items: center;
     gap: 5px;
+    color: var(--le-color-gray-dark);
+    margin-left: auto;
+}
+
+.layout-editor-status.status-unsaved {
+    color: #ff9800;
+}
+
+.layout-editor-status.status-saving {
+    color: #2196f3;
+}
+
+.layout-editor-status.status-saved {
+    color: #4caf50;
+}
+
+/* Hide Frappe's standard Save button on Layout Editor page */
+.layout-editor-dialog .btn-primary-dark[data-label="Save"],
+body[data-page-container="layout-editor"] .primary-action {
+    display: none !important;
 }
 
 /* Responsive */

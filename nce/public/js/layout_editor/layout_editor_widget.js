@@ -95,26 +95,23 @@ class LayoutEditorWidget {
     }
     
     /**
-     * Create toolbar with save button
+     * Create toolbar with preview button
      */
     createToolbar() {
-        // Save button
-        this.saveBtn = document.createElement('button');
-        this.saveBtn.className = 'btn btn-primary btn-sm';
-        this.saveBtn.textContent = '💾 Save Changes';
-        this.saveBtn.style.marginRight = '10px';
-        this.saveBtn.disabled = true;
-        this.saveBtn.addEventListener('click', () => {
-            this.saveChanges();
+        // Preview Changes button (validates before saving)
+        this.previewBtn = document.createElement('button');
+        this.previewBtn.className = 'btn le-btn-primary btn-sm';
+        this.previewBtn.textContent = '👁️ Preview Changes';
+        this.previewBtn.disabled = true;
+        this.previewBtn.addEventListener('click', () => {
+            this.previewAndSaveChanges();
         });
-        this.toolbarEl.appendChild(this.saveBtn);
+        this.toolbarEl.appendChild(this.previewBtn);
         
         // Status indicator
         this.statusEl = document.createElement('span');
         this.statusEl.className = 'layout-editor-status';
-        this.statusEl.textContent = 'No changes';
-        this.statusEl.style.color = '#999';
-        this.statusEl.style.marginLeft = '10px';
+        this.statusEl.textContent = '✓ No changes';
         this.toolbarEl.appendChild(this.statusEl);
         
         // Setup change tracking
@@ -127,27 +124,64 @@ class LayoutEditorWidget {
      * Handle data changes
      */
     onDataChanged() {
-        this.saveBtn.disabled = false;
+        this.previewBtn.disabled = false;
         this.statusEl.textContent = '● Unsaved changes';
-        this.statusEl.style.color = '#ff9800';
+        this.statusEl.className = 'layout-editor-status status-unsaved';
     }
     
     /**
-     * Save changes to backend
+     * Preview and save changes (with confirmation)
      */
-    async saveChanges() {
+    async previewAndSaveChanges() {
         if (!this.dataManager.hasChanges()) {
-            LayoutEditorUtils.showAlert('No changes to save', 'blue');
+            LayoutEditorUtils.showAlert('No changes to preview', 'blue');
             return;
         }
         
+        const changes = this.dataManager.getChanges();
+        const changeCount = Object.keys(changes).length;
+        
+        // Build preview HTML
+        let previewHtml = '<div style="max-height: 300px; overflow-y: auto;">';
+        for (const [fieldname, properties] of Object.entries(changes)) {
+            const field = this.dataManager.getField(fieldname);
+            const fieldLabel = field ? field.label || fieldname : fieldname;
+            previewHtml += `<div style="margin-bottom: 15px; padding: 10px; background: #f5f5f5; border-radius: 4px;">`;
+            previewHtml += `<strong>${fieldLabel}</strong> <small style="color: #666;">(${fieldname})</small><ul style="margin: 5px 0 0 20px;">`;
+            for (const [prop, value] of Object.entries(properties)) {
+                previewHtml += `<li><code>${prop}</code> = <strong>${value}</strong></li>`;
+            }
+            previewHtml += '</ul></div>';
+        }
+        previewHtml += '</div>';
+        
+        // Show confirmation dialog
+        frappe.confirm(
+            `<h4>Preview Changes</h4>
+            <p><strong>${changeCount} field(s)</strong> will be updated:</p>
+            ${previewHtml}
+            <p style="margin-top: 15px;"><strong>Apply these changes?</strong></p>`,
+            () => {
+                // User confirmed - save changes
+                this.doSaveChanges(changes);
+            },
+            () => {
+                // User cancelled
+                LayoutEditorUtils.showAlert('Changes not applied', 'blue');
+            }
+        );
+    }
+    
+    /**
+     * Actually save changes to backend
+     */
+    async doSaveChanges(changes) {
         try {
-            // Disable save button during save
-            this.saveBtn.disabled = true;
-            this.statusEl.textContent = 'Saving...';
-            this.statusEl.style.color = '#2196f3';
+            // Disable button during save
+            this.previewBtn.disabled = true;
+            this.statusEl.textContent = 'Applying...';
+            this.statusEl.className = 'layout-editor-status status-saving';
             
-            const changes = this.dataManager.getChanges();
             console.log('Saving changes:', changes);
             
             // Call backend to save
@@ -175,34 +209,34 @@ class LayoutEditorWidget {
             this.dataManager.clearChanges();
             
             // Update UI
-            this.saveBtn.disabled = true;
-            this.statusEl.textContent = '✓ All changes saved';
-            this.statusEl.style.color = '#4caf50';
+            this.previewBtn.disabled = true;
+            this.statusEl.textContent = '✓ Changes applied';
+            this.statusEl.className = 'layout-editor-status status-saved';
             
             LayoutEditorUtils.showSuccess(
-                `Saved ${Object.keys(changes).length} field(s)`,
-                'Changes Saved'
+                `Applied ${Object.keys(changes).length} field change(s)`,
+                'Success'
             );
             
             // Reset status after 3 seconds
             setTimeout(() => {
                 if (!this.dataManager.hasChanges()) {
-                    this.statusEl.textContent = 'No changes';
-                    this.statusEl.style.color = '#999';
+                    this.statusEl.textContent = '✓ No changes';
+                    this.statusEl.className = 'layout-editor-status';
                 }
             }, 3000);
             
         } catch (error) {
             console.error('Save error:', error);
             
-            // Re-enable save button
-            this.saveBtn.disabled = false;
+            // Re-enable button
+            this.previewBtn.disabled = false;
             this.statusEl.textContent = '● Unsaved changes';
-            this.statusEl.style.color = '#ff9800';
+            this.statusEl.className = 'layout-editor-status status-unsaved';
             
             LayoutEditorUtils.showError(
-                `Failed to save: ${error.message}`,
-                'Save Error'
+                `Failed to apply: ${error.message}`,
+                'Error'
             );
         }
     }
@@ -230,13 +264,12 @@ class LayoutEditorWidget {
             // Reset properties panel
             this.propertiesPanel.renderEmpty();
             
-            // Show success with stats
+            // Show brief toast notification (not a dialog)
             const stats = this.dataManager.getStats();
-            LayoutEditorUtils.showSuccess(
-                `Loaded <strong>${doctypeName}</strong><br>` +
-                `${stats.dataFields} fields, ${stats.sections} sections, ${stats.tabs} tabs`,
-                'DocType Loaded'
-            );
+            frappe.show_alert({
+                message: `Loaded ${doctypeName}: ${stats.dataFields} fields, ${stats.sections} sections`,
+                indicator: 'green'
+            }, 3);
             
             return true;
         } catch (error) {
