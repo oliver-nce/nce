@@ -95,19 +95,19 @@ class LayoutEditorWidget {
     }
     
     /**
-     * Create toolbar with save button
+     * Create toolbar with preview button
      */
     createToolbar() {
-        // Save button
-        this.saveBtn = document.createElement('button');
-        this.saveBtn.className = 'btn btn-primary btn-sm';
-        this.saveBtn.textContent = '💾 Save Changes';
-        this.saveBtn.style.marginRight = '10px';
-        this.saveBtn.disabled = true;
-        this.saveBtn.addEventListener('click', () => {
-            this.saveChanges();
+        // Preview Changes button (replaces direct save)
+        this.previewBtn = document.createElement('button');
+        this.previewBtn.className = 'btn btn-primary btn-sm';
+        this.previewBtn.textContent = '👁️ Preview Changes';
+        this.previewBtn.style.marginRight = '10px';
+        this.previewBtn.disabled = true;
+        this.previewBtn.addEventListener('click', () => {
+            this.previewAndValidateChanges();
         });
-        this.toolbarEl.appendChild(this.saveBtn);
+        this.toolbarEl.appendChild(this.previewBtn);
         
         // Status indicator
         this.statusEl = document.createElement('span');
@@ -127,28 +127,186 @@ class LayoutEditorWidget {
      * Handle data changes
      */
     onDataChanged() {
-        this.saveBtn.disabled = false;
+        this.previewBtn.disabled = false;
         this.statusEl.textContent = '● Unsaved changes';
         this.statusEl.style.color = '#ff9800';
     }
     
     /**
-     * Save changes to backend
+     * Preview and validate changes before saving
      */
-    async saveChanges() {
+    async previewAndValidateChanges() {
         if (!this.dataManager.hasChanges()) {
-            LayoutEditorUtils.showAlert('No changes to save', 'blue');
+            LayoutEditorUtils.showAlert('No changes to preview', 'blue');
             return;
         }
         
+        const changes = this.dataManager.getChanges();
+        
+        // Build validation request
         try {
-            // Disable save button during save
-            this.saveBtn.disabled = true;
-            this.statusEl.textContent = 'Saving...';
+            this.previewBtn.disabled = true;
+            this.statusEl.textContent = 'Validating...';
             this.statusEl.style.color = '#2196f3';
             
-            const changes = this.dataManager.getChanges();
-            console.log('Saving changes:', changes);
+            // Call backend to validate
+            const validation = await new Promise((resolve, reject) => {
+                frappe.call({
+                    method: 'nce.wp_sync.doctype.layout_editor.layout_editor.validate_field_changes',
+                    args: {
+                        doctype_name: this.currentDocType,
+                        changes: changes
+                    },
+                    callback: (r) => {
+                        if (r.message) {
+                            resolve(r.message);
+                        } else {
+                            reject(new Error('No response from server'));
+                        }
+                    },
+                    error: (err) => {
+                        reject(err);
+                    }
+                });
+            });
+            
+            // Re-enable button
+            this.previewBtn.disabled = false;
+            this.statusEl.textContent = '● Unsaved changes';
+            this.statusEl.style.color = '#ff9800';
+            
+            // Show validation results
+            if (validation.valid) {
+                this.showConfirmationDialog(changes, validation);
+            } else {
+                this.showValidationErrors(validation);
+            }
+            
+        } catch (error) {
+            console.error('Validation error:', error);
+            this.previewBtn.disabled = false;
+            this.statusEl.textContent = '● Unsaved changes';
+            this.statusEl.style.color = '#ff9800';
+            
+            LayoutEditorUtils.showError(
+                `Validation failed: ${error.message}`,
+                'Validation Error'
+            );
+        }
+    }
+    
+    /**
+     * Show validation errors
+     */
+    showValidationErrors(validation) {
+        const errorHtml = `
+            <div style="color: #d32f2f; margin-bottom: 15px;">
+                <h4>❌ Validation Failed</h4>
+                <p><strong>${validation.errors.length} error(s) found:</strong></p>
+            </div>
+            <div style="background: #ffebee; padding: 15px; border-radius: 4px; max-height: 300px; overflow-y: auto;">
+                <ul style="margin: 0; padding-left: 20px;">
+                    ${validation.errors.map(err => `<li>${LayoutEditorUtils.escapeHtml(err)}</li>`).join('')}
+                </ul>
+            </div>
+        `;
+        
+        frappe.msgprint({
+            title: 'Validation Failed',
+            message: errorHtml,
+            indicator: 'red'
+        });
+    }
+    
+    /**
+     * Show confirmation dialog with preview
+     */
+    showConfirmationDialog(changes, validation) {
+        // Build preview HTML
+        const changesHtml = this.buildChangesPreview(changes);
+        
+        const dialog = new frappe.ui.Dialog({
+            title: '✅ Changes Validated - Ready to Apply',
+            size: 'large',
+            fields: [
+                {
+                    fieldtype: 'HTML',
+                    options: `
+                        <div style="margin-bottom: 20px;">
+                            <div style="padding: 15px; background: #e8f5e9; border-radius: 4px; margin-bottom: 15px;">
+                                <strong>✓ Validation Passed</strong><br>
+                                ${validation.message || 'All changes are valid and safe to apply'}
+                            </div>
+                            <h4>Preview of Changes:</h4>
+                            ${changesHtml}
+                        </div>
+                    `
+                }
+            ],
+            primary_action_label: '✅ Apply Changes',
+            primary_action: () => {
+                dialog.hide();
+                this.applyChanges(changes);
+            },
+            secondary_action_label: 'Cancel',
+            secondary_action: () => {
+                dialog.hide();
+            }
+        });
+        
+        dialog.show();
+    }
+    
+    /**
+     * Build HTML preview of changes
+     */
+    buildChangesPreview(changes) {
+        let html = '<div style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 15px; border-radius: 4px; background: #fafafa;">';
+        
+        for (const [fieldname, properties] of Object.entries(changes)) {
+            const field = this.dataManager.getField(fieldname);
+            const fieldLabel = field ? field.label || fieldname : fieldname;
+            
+            html += `
+                <div style="margin-bottom: 20px; padding: 10px; background: white; border-radius: 4px; border-left: 3px solid #2196f3;">
+                    <strong style="color: #1976d2;">📝 ${LayoutEditorUtils.escapeHtml(fieldLabel)}</strong>
+                    <span style="color: #666; font-size: 12px; margin-left: 10px;">(${LayoutEditorUtils.escapeHtml(fieldname)})</span>
+                    <ul style="margin: 10px 0 0 20px; padding: 0;">
+            `;
+            
+            for (const [prop, value] of Object.entries(properties)) {
+                const displayValue = value === '' ? '(empty)' : value;
+                html += `<li><code>${LayoutEditorUtils.escapeHtml(prop)}</code> = <strong>${LayoutEditorUtils.escapeHtml(String(displayValue))}</strong></li>`;
+            }
+            
+            html += '</ul></div>';
+        }
+        
+        html += '</div>';
+        
+        const changeCount = Object.keys(changes).length;
+        const propCount = Object.values(changes).reduce((sum, props) => sum + Object.keys(props).length, 0);
+        
+        html = `
+            <div style="margin-bottom: 15px; padding: 10px; background: #fff3e0; border-radius: 4px;">
+                <strong>${changeCount} field(s)</strong> will be updated with <strong>${propCount} property change(s)</strong>
+            </div>
+        ` + html;
+        
+        return html;
+    }
+    
+    /**
+     * Apply changes after validation and confirmation
+     */
+    async applyChanges(changes) {
+        try {
+            // Disable button during save
+            this.previewBtn.disabled = true;
+            this.statusEl.textContent = 'Applying...';
+            this.statusEl.style.color = '#2196f3';
+            
+            console.log('Applying changes:', changes);
             
             // Call backend to save
             const response = await new Promise((resolve, reject) => {
@@ -175,13 +333,13 @@ class LayoutEditorWidget {
             this.dataManager.clearChanges();
             
             // Update UI
-            this.saveBtn.disabled = true;
+            this.previewBtn.disabled = true;
             this.statusEl.textContent = '✓ All changes saved';
             this.statusEl.style.color = '#4caf50';
             
             LayoutEditorUtils.showSuccess(
-                `Saved ${Object.keys(changes).length} field(s)`,
-                'Changes Saved'
+                `Applied ${Object.keys(changes).length} field change(s)`,
+                'Changes Applied Successfully'
             );
             
             // Reset status after 3 seconds
@@ -193,16 +351,16 @@ class LayoutEditorWidget {
             }, 3000);
             
         } catch (error) {
-            console.error('Save error:', error);
+            console.error('Apply error:', error);
             
-            // Re-enable save button
-            this.saveBtn.disabled = false;
+            // Re-enable button
+            this.previewBtn.disabled = false;
             this.statusEl.textContent = '● Unsaved changes';
             this.statusEl.style.color = '#ff9800';
             
             LayoutEditorUtils.showError(
-                `Failed to save: ${error.message}`,
-                'Save Error'
+                `Failed to apply changes: ${error.message}`,
+                'Apply Error'
             );
         }
     }
