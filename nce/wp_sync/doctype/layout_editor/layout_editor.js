@@ -18,6 +18,9 @@ let layoutEditorWidget = null;
 
 frappe.ui.form.on("Layout Editor", {
     refresh: function(frm) {
+        // Hide Frappe's standard Save button (not needed - this is a tool, not a data form)
+        frm.disable_save();
+        
         // Initialize tabs if not already done
         if (!frm._tabs_initialized) {
             setup_tabs(frm);

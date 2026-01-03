@@ -210,12 +210,14 @@ class LayoutEditorWidget {
             
             // Update UI
             this.previewBtn.disabled = true;
-            this.statusEl.textContent = '✓ Changes applied';
+            this.statusEl.textContent = '✓ DocType updated';
             this.statusEl.className = 'layout-editor-status status-saved';
             
             LayoutEditorUtils.showSuccess(
-                `Applied ${Object.keys(changes).length} field change(s)`,
-                'Success'
+                `<strong>${this.currentDocType}</strong> has been updated!<br>` +
+                `${Object.keys(changes).length} field property change(s) applied.<br><br>` +
+                `<small>Refresh the DocType form to see changes.</small>`,
+                '✅ DocType Customizations Saved'
             );
             
             // Reset status after 3 seconds
