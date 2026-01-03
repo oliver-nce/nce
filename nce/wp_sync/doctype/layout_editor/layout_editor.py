@@ -133,6 +133,181 @@ Please confirm before making changes.
     return {"prompt": prompt}
 
 
+@frappe.whitelist()
+def validate_json_for_customizations(doctype_name, json_str):
+    """Validate JSON before applying as customizations - checks all fields, rejects all if any invalid"""
+    errors = []
+    
+    # Parse JSON
+    try:
+        fields = json.loads(json_str)
+    except json.JSONDecodeError as e:
+        return {"success": False, "errors": [f"Invalid JSON syntax: {str(e)}"]}
+    
+    # Check structure
+    if not isinstance(fields, list):
+        return {"success": False, "errors": ["JSON must be an array of field objects"]}
+    
+    # Get base meta to check against
+    try:
+        base_meta = frappe.get_meta(doctype_name)
+    except Exception as e:
+        return {"success": False, "errors": [f"Cannot load DocType '{doctype_name}': {str(e)}"]}
+    
+    base_fieldnames = [f.fieldname for f in base_meta.fields]
+    
+    # Valid fieldtypes
+    valid_fieldtypes = [
+        "Data", "Text", "Small Text", "Text Editor", "Code", "Select", "Link", 
+        "Dynamic Link", "Check", "Int", "Float", "Currency", "Date", "Time", 
+        "Datetime", "Duration", "Password", "Percent", "Long Text", "HTML", 
+        "Markdown Editor", "Attach", "Attach Image", "Signature", "Color", 
+        "Barcode", "Geolocation", "HTML Editor", "Read Only", "Button",
+        "Table", "Table MultiSelect", "Section Break", "Column Break", "Tab Break",
+        "Heading", "Image", "Fold", "Rating", "Icon", "Autocomplete", "JSON"
+    ]
+    
+    # Validate each field
+    for idx, field in enumerate(fields):
+        if not isinstance(field, dict):
+            errors.append(f"Field {idx}: Not an object")
+            continue
+        
+        # Required fields
+        fieldname = field.get("fieldname")
+        fieldtype = field.get("fieldtype")
+        
+        if not fieldname:
+            errors.append(f"Field {idx}: Missing 'fieldname'")
+            continue
+            
+        if not fieldtype:
+            errors.append(f"Field {idx} ({fieldname}): Missing 'fieldtype'")
+            continue
+        
+        # Check fieldtype validity
+        if fieldtype not in valid_fieldtypes:
+            errors.append(f"Field {idx} ({fieldname}): Invalid fieldtype '{fieldtype}'")
+        
+        # Check for duplicate fieldnames in this submission
+        fieldnames_in_submission = [f.get("fieldname") for f in fields if f.get("fieldname")]
+        if fieldnames_in_submission.count(fieldname) > 1:
+            errors.append(f"Field {idx} ({fieldname}): Duplicate fieldname in submission")
+    
+    # Check for deleted core fields (fields in base but not in submission)
+    edited_fieldnames = [f.get("fieldname") for f in fields if f.get("fieldname")]
+    deleted_fields = set(base_fieldnames) - set(edited_fieldnames)
+    
+    if deleted_fields:
+        errors.append(f"Cannot delete core fields: {', '.join(sorted(deleted_fields))}. To hide them, set 'hidden': 1 instead.")
+    
+    # Return results
+    if errors:
+        return {
+            "success": False, 
+            "errors": errors,
+            "total_errors": len(errors)
+        }
+    else:
+        # Build structure preview
+        structure = build_structure_preview(fields)
+        return {
+            "success": True,
+            "message": f"✅ All {len(fields)} fields validated successfully",
+            "structure_html": structure
+        }
+
+
+@frappe.whitelist()
+def update_properties(doctype_name, json_str):
+    """Apply validated JSON as Property Setters - assumes validation already passed"""
+    try:
+        fields = json.loads(json_str)
+    except json.JSONDecodeError as e:
+        frappe.throw(f"Invalid JSON: {str(e)}")
+    
+    # Get current meta
+    base_meta = frappe.get_meta(doctype_name)
+    
+    # Track changes
+    updated_count = 0
+    created_count = 0
+    
+    # Apply each field's properties
+    for field in fields:
+        fieldname = field.get("fieldname")
+        if not fieldname:
+            continue
+        
+        # Get base field if exists
+        base_field = None
+        for f in base_meta.fields:
+            if f.fieldname == fieldname:
+                base_field = f
+                break
+        
+        # Compare and create Property Setters for changed properties
+        for prop, value in field.items():
+            # Skip fieldname and fieldtype (can't be changed via Property Setter)
+            if prop in ["fieldname", "fieldtype"]:
+                continue
+            
+            # Check if property changed from base
+            base_value = getattr(base_field, prop, None) if base_field else None
+            
+            # If different from base, create/update Property Setter
+            if value != base_value:
+                # Check if Property Setter already exists
+                existing = frappe.db.exists("Property Setter", {
+                    "doc_type": doctype_name,
+                    "field_name": fieldname,
+                    "property": prop
+                })
+                
+                if existing:
+                    # Update existing
+                    ps = frappe.get_doc("Property Setter", existing)
+                    ps.value = str(value)
+                    ps.save()
+                    updated_count += 1
+                else:
+                    # Create new
+                    frappe.get_doc({
+                        "doctype": "Property Setter",
+                        "doc_type": doctype_name,
+                        "field_name": fieldname,
+                        "property": prop,
+                        "value": str(value),
+                        "property_type": get_property_type(value)
+                    }).insert()
+                    created_count += 1
+    
+    # Commit changes
+    frappe.db.commit()
+    
+    # Clear cache to reflect changes
+    frappe.clear_cache(doctype=doctype_name)
+    
+    return {
+        "success": True,
+        "message": f"✅ Applied customizations: {created_count} created, {updated_count} updated",
+        "created": created_count,
+        "updated": updated_count
+    }
+
+
+def get_property_type(value):
+    """Determine property type for Property Setter"""
+    if isinstance(value, bool) or value in [0, 1]:
+        return "Check"
+    elif isinstance(value, int):
+        return "Int"
+    elif isinstance(value, float):
+        return "Float"
+    else:
+        return "Data"
+
+
 def build_structure_preview(fields):
     """Build an HTML preview of the layout structure"""
     html = ['<div style="font-family: monospace; font-size: 12px; line-height: 1.6;">']

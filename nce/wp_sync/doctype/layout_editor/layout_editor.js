@@ -9,15 +9,30 @@ frappe.ui.form.on("Layout Editor", {
                 <h4>📐 Layout Editor</h4>
                 <p>Edit DocType layouts that can't be changed in Customize Form:</p>
                 <ul style="margin: 5px 0; padding-left: 20px;">
+                    <li>Set field rows (height)</li>
                     <li>Move fields between tabs/sections</li>
                     <li>Reorder fields freely</li>
                     <li>Rename Tab/Section labels</li>
-                    <li>Delete fields, sections, or tabs</li>
-                    <li>Change field types</li>
+                    <li>Hide standard fields</li>
+                    <li>Change field properties</li>
                 </ul>
-                <p><strong>Workflow:</strong> Select DocType → Load JSON → Edit → Generate Prompt → Paste in Cursor</p>
+                <p><strong>Workflow:</strong> Load JSON → Edit → Validate → Update Properties</p>
             </div>
         `);
+        
+        // Show "Update Properties" button if validated and not changed
+        if (frm.doc.__validated && !frm.doc.__json_changed) {
+            if (!frm.custom_buttons["Update Properties"]) {
+                frm.add_custom_button(__("Update Properties"), function() {
+                    update_properties(frm);
+                }).css({"background-color": "#28a745", "color": "white", "font-weight": "bold"});
+            }
+        } else {
+            // Remove button if it exists
+            if (frm.custom_buttons["Update Properties"]) {
+                frm.remove_custom_button("Update Properties");
+            }
+        }
     },
     
     load_json_button: function(frm) {
@@ -35,8 +50,14 @@ frappe.ui.form.on("Layout Editor", {
                 if (r.message) {
                     frm.set_value("json_editor", r.message.fields_json);
                     frm.set_df_property('structure_preview', 'options', r.message.structure_html);
+                    
+                    // Reset validation state
+                    frm.doc.__validated = false;
+                    frm.doc.__json_changed = false;
+                    frm.refresh();
+                    
                     frappe.show_alert({
-                        message: `Loaded ${r.message.fields.length} fields from ${frm.doc.target_doctype}`,
+                        message: `Loaded ${r.message.total_fields} fields from ${frm.doc.target_doctype}`,
                         indicator: 'green'
                     });
                 }
@@ -44,30 +65,68 @@ frappe.ui.form.on("Layout Editor", {
         });
     },
     
+    json_editor: function(frm) {
+        // Mark as changed when JSON is edited
+        if (frm.doc.__validated) {
+            frm.doc.__json_changed = true;
+            frm.doc.__validated = false;
+            frm.refresh();
+        }
+    },
+    
     validate_json_button: function(frm) {
+        if (!frm.doc.target_doctype) {
+            frappe.msgprint("Please select a DocType first");
+            return;
+        }
+        
         if (!frm.doc.json_editor) {
             frappe.msgprint("No JSON to validate. Load a DocType first.");
             return;
         }
         
         frappe.call({
-            method: "nce.wp_sync.doctype.layout_editor.layout_editor.validate_json",
+            method: "nce.wp_sync.doctype.layout_editor.layout_editor.validate_json_for_customizations",
             args: {
+                doctype_name: frm.doc.target_doctype,
                 json_str: frm.doc.json_editor
             },
             callback: function(r) {
                 if (r.message) {
-                    if (r.message.valid) {
+                    if (r.message.success) {
+                        // Validation passed!
+                        frm.doc.__validated = true;
+                        frm.doc.__json_changed = false;
                         frm.set_df_property('structure_preview', 'options', r.message.structure_html);
+                        frm.refresh();
+                        
                         frappe.show_alert({
                             message: r.message.message,
                             indicator: 'green'
                         });
-                    } else {
+                        
                         frappe.msgprint({
-                            title: 'Validation Error',
+                            title: '✅ Validation Passed',
+                            indicator: 'green',
+                            message: r.message.message + '<br><br><strong>Click "Update Properties" button to apply changes.</strong>'
+                        });
+                    } else {
+                        // Validation failed - show all errors
+                        frm.doc.__validated = false;
+                        frm.doc.__json_changed = true;
+                        frm.refresh();
+                        
+                        let error_html = '<div style="color: #d9534f;">';
+                        error_html += `<p><strong>${r.message.total_errors} error(s) found:</strong></p><ol style="margin: 10px 0; padding-left: 20px;">`;
+                        r.message.errors.forEach(function(err) {
+                            error_html += '<li>' + err + '</li>';
+                        });
+                        error_html += '</ol></div>';
+                        
+                        frappe.msgprint({
+                            title: '❌ Validation Failed',
                             indicator: 'red',
-                            message: r.message.error
+                            message: error_html
                         });
                     }
                 }
@@ -125,6 +184,55 @@ frappe.ui.form.on("Layout Editor", {
         });
     }
 });
+
+
+function update_properties(frm) {
+    if (!frm.doc.target_doctype || !frm.doc.json_editor) {
+        frappe.msgprint("No data to apply");
+        return;
+    }
+    
+    // Confirm before applying
+    frappe.confirm(
+        `Apply customizations to <strong>${frm.doc.target_doctype}</strong>?<br><br>` +
+        `This will create/update Property Setters in the database.`,
+        function() {
+            // User confirmed
+            frappe.call({
+                method: "nce.wp_sync.doctype.layout_editor.layout_editor.update_properties",
+                args: {
+                    doctype_name: frm.doc.target_doctype,
+                    json_str: frm.doc.json_editor
+                },
+                callback: function(r) {
+                    if (r.message && r.message.success) {
+                        frappe.show_alert({
+                            message: r.message.message,
+                            indicator: 'green'
+                        });
+                        
+                        frappe.msgprint({
+                            title: '✅ Success',
+                            indicator: 'green',
+                            message: r.message.message + '<br><br>Reload the JSON to see the applied changes.'
+                        });
+                        
+                        // Reset state
+                        frm.doc.__validated = false;
+                        frm.doc.__json_changed = false;
+                        frm.refresh();
+                    } else {
+                        frappe.msgprint({
+                            title: 'Error',
+                            indicator: 'red',
+                            message: 'Failed to apply customizations'
+                        });
+                    }
+                }
+            });
+        }
+    );
+}
 
 
 
