@@ -1,0 +1,61 @@
+"Bulk Edit Fields"
+"Is System Generated","Label","Type","Name","Non Negative","Mandatory","Unique","Is Virtual","In List View","In Standard Filter","In Global Search","In Preview","Bold","No Copy","Allow in Quick Entry","Translatable","Link Filters","Default","Precision","Length","Options","Sort Options","Fetch From","Fetch on Save if Empty","Show Dashboard","Depends On","Perm Level","Hidden","Read Only","Collapsible","Allow Bulk Edit","Collapsible Depends On","Ignore User Permissions","Allow on Submit","Report Hide","Remember Last Selected Value","Hide Border","Ignore XSS Filter","Mandatory Depends On","Read Only Depends On","In Filter","Hide Seconds","Hide Days","Description","Placeholder","Print Hide","Print Hide If No Value","Print Width","Columns","Width","Is Custom Field"
+"is_system_generated","label","fieldtype","fieldname","non_negative","reqd","unique","is_virtual","in_list_view","in_standard_filter","in_global_search","in_preview","bold","no_copy","allow_in_quick_entry","translatable","link_filters","default","precision","length","options","sort_options","fetch_from","fetch_if_empty","show_dashboard","depends_on","permlevel","hidden","read_only","collapsible","allow_bulk_edit","collapsible_depends_on","ignore_user_permissions","allow_on_submit","report_hide","remember_last_selected_value","hide_border","ignore_xss_filter","mandatory_depends_on","read_only_depends_on","in_filter","hide_seconds","hide_days","description","placeholder","print_hide","print_hide_if_no_value","print_width","columns","width","is_custom_field"
+" "," "," "," "," "," "," "," "," "," "," "," "," "," "," "," "," "," ","Set non-standard precision for a Float or Currency field "," ","For Links, enter the DocType as range.
+For Select, enter list of Options, each on a new line. "," "," ","If unchecked, the value will always be re-fetched on save. "," ","This field will appear only if the fieldname defined here has value OR the rules are true (examples):
+myfield
+eval:doc.myfield=='My Value'
+eval:doc.age>18 "," "," "," "," "," "," "," "," "," "," "," ","Don't encode HTML tags like <script> or just characters like < or >, as they could be intentionally used in this field "," "," "," "," "," "," "," "," "," ","Print Width of the field, if the field is a column in a table ","Number of columns for a field in a Grid (Total Columns in a grid should be less than 11) "," "," "
+"The CSV format is case sensitive"
+"Do not edit headers which are preset in the template"
+"------"
+"","Task Configuration","Section Break","basic_section","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","",""
+"","Source Table/View","Data","source_table","",1,"","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","WordPress table or view name (e.g., wp_zoho_registrations_new_site)","","","","","","",""
+"","App Version","HTML","app_version_display","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","",""
+"","Enabled","Check","enabled","","","","","","","","","","","","","","1","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","",""
+"","Execution Order","Int","execution_order","","","","","","","","","","","","","","10","","","","","","","","","","","","","","","","","","","","","","","","","","Lower numbers run first","","","","","","",""
+"","","Column Break","column_break_basic","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","",""
+"","Task Name","Data","task_name","",1,1,"","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","Unique identifier for this sync task","","","","","","",""
+"","Description","Small Text","description","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","",""
+"","New Section","Section Break","custom_section_break_dv2xz","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","",1
+"","","Column Break","custom_column_break_ekiqr","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","",1
+"","","Column Break","custom_column_break_b2xqr","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","",1
+"","Target DocType","Link","target_doctype","","","","","","","","","","","","","","","","","DocType","","","","","","","","","","","","","","","","","","","","","","","Frappe DocType to sync into (auto-filled by Create Mirror DocType button)","","","","","","",""
+"","","Column Break","custom_column_break_02xfk","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","",1
+"","Sync Direction","Select","sync_direction","",1,"","","","","","","","","","","","WP to Frappe","","","WP to Frappe
+Frappe to WP
+Bidirectional","","","","","","","","","","","","","","","","","","","","","","","","","","","","","",""
+"","Field Mapping","Section Break","mapping_section","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","",""
+"","Field Mapping (JSON)","JSON","field_mapping","","","","","","","","","","","","","","","","","","","","","","","",1,"","","","","","","","","","","","","","","","JSON object mapping WP columns to Frappe fields. Example: {""wp_column"": ""frappe_field"", ""id"": ""wp_source_id""}","","","","","","",""
+"","","Column Break","custom_column_break_jvxke","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","",1
+"","WHERE Clause (Optional)","Small Text","where_clause","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","SQL WHERE clause to filter source data (without 'WHERE' keyword)","","","","","","",""
+"","Actions","Section Break","actions_section","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","",""
+"","Run Sync Now","Button","run_now_button","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","",""
+"","","Column Break","custom_column_break_2fjhn","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","",1
+"","Create Mirror DocType","Button","create_mirror_doctype_button","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","Auto-create a Frappe DocType that mirrors the WordPress table structure","","","","","","",""
+"","","Column Break","custom_column_break_vnqlc","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","",1
+"","Delete All Records","Button","delete_all_records_button","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","Delete all records from the Target DocType (cannot be undone!)","","","","","","",""
+"","","Column Break","custom_column_break_sh1ux","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","",1
+"","START OVER","Button","start_over_button","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","Completely delete the Target DocType and all its data (cannot be undone!)","","","","","","",""
+"","Sync Settings","Section Break","incremental_sync_section","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","",""
+"","Use Incremental Sync","Check","use_incremental_sync","","","","","","","","","","","","","","1","","","","","","","","","","","","","","","","","","","","","","","","","","Only sync records updated since last run","","","","","","",""
+"","Source Primary Key","Select","source_primary_key","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","Column used to match records for upsert (insert or update)","","","","","","",""
+"","Updated At Field","Select","updated_at_field","","","","","","","","","","","","","","","","","","","","","","eval:doc.use_incremental_sync","","","","","","","","","","","","","","","","","","Date/datetime column to detect changed records","","","","","","",""
+"","","Column Break","column_break_incremental","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","",""
+"","Full Sync Mode","Select","full_sync_mode","","","","","","","","","","","","","","Upsert All","","","Upsert All
+Clear & Import","","","","","eval:!doc.use_incremental_sync","","","","","","","","","","","","","","","","","","Upsert All = update existing, insert new. Clear & Import = delete all first.","","","","","","",""
+"","Buffer (Minutes)","Int","sync_buffer_minutes","","","","","","","","","","","","","","5","","","","","","","","eval:doc.use_incremental_sync","","","","","","","","","","","","","","","","","","Look back extra minutes to catch in-flight updates","","","","","","",""
+"","Last Execution Status","Section Break","status_section","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","",""
+"","Last Run At","Datetime","last_run_at","","","","","","","","","","","","","","","","","","","","","","","","",1,"","","","","","","","","","","","","","","","","","","","","",""
+"","Last Run Status","Select","last_run_status","","","","","","","","","","","","","","","","","
+Success
+Failed
+Partial","","","","","","","",1,"","","","","","","","","","","","","","","","","","","","","",""
+"","","Column Break","column_break_status","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","",""
+"","Rows Synced","Int","rows_synced","","","","","","","","","","","","","","","","","","","","","","","","",1,"","","","","","","","","","","","","","","","","","","","","",""
+"","Last Error","Small Text","last_error","","","","","","","","","","","","","","","","","","","","","","","","",1,"","","","","","","","","","","","","","","","","","","","","",""
+"","Column Mapping","Section Break","column_mapping_section","","","","","","","","","","","","","","","","","","","","","","","","","",1,"","","","","","","","","","","","","","","","","","","","",""
+"","Column Mapping Table","HTML","column_mapping_display","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","",""
+"","Column Mapping HTML","Text","column_mapping_html","","","","","","","","","","","","","","","","","","","","","","","",1,"","","","","","","","","","","","","","","","","","","","","","",""
+"","Tab 2","Tab Break","custom_tab_2","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","",1
+"","Tab 3","Tab Break","custom_tab_3","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","",1

@@ -70,11 +70,22 @@ class LayoutEditorDataManager {
         this.rawFields.forEach((field, index) => {
             field._idx = index; // Store original index
             
-            // Tab Break - start new tab
+            // Tab Break - start new tab (explicit Tab Break field)
             if (this.fieldTypes.isTabBreak(field.fieldtype)) {
                 currentTab = {
                     label: field.label || 'Details',
                     fieldname: field.fieldname,
+                    sections: []
+                };
+                this.structure.tabs.push(currentTab);
+                currentSection = null;
+                currentColumn = null;
+            }
+            // Also detect implicit tabs from field.parent_tab property
+            else if (field.parent_tab && (!currentTab || currentTab.label !== field.parent_tab)) {
+                currentTab = {
+                    label: field.parent_tab,
+                    fieldname: '_tab_' + field.parent_tab.toLowerCase().replace(/\s+/g, '_'),
                     sections: []
                 };
                 this.structure.tabs.push(currentTab);
