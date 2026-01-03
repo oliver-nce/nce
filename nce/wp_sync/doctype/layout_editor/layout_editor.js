@@ -317,8 +317,10 @@ function setup_tabs(frm) {
     
     // Initialize Bootstrap tabs using jQuery (THE FRAPPE WAY)
     $('#layout-editor-tabs a').on('click', function (e) {
-        e.preventDefault(); // Prevent Frappe's routing system from interfering
+        e.preventDefault(); // Prevent default link behavior
+        e.stopPropagation(); // Stop event from bubbling to Frappe's router
         $(this).tab('show'); // Use jQuery Bootstrap method to show tab
+        return false; // Extra safety - equivalent to preventDefault + stopPropagation
     });
     
     // Listen for tab shown event to initialize Visual Editor
