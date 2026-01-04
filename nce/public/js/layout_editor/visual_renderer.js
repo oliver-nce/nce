@@ -209,10 +209,16 @@ class LayoutEditorVisualRenderer {
             }
         });
         
+        // Calculate remaining width for auto columns
+        const remainingWidth = 12 - totalFixedWidth;
+        
         // Calculate this column's width
         if (columnIndex === 0) {
-            // First column: takes remaining space
-            const remainingWidth = 12 - totalFixedWidth;
+            // First column: shares remaining space with other auto columns
+            if (autoColumnCount > 0) {
+                const autoShare = remainingWidth / autoColumnCount;
+                return (autoShare / 12) * 100;
+            }
             return (remainingWidth / 12) * 100;
         } else {
             const width = parseInt(column.width) || 0;
@@ -220,9 +226,9 @@ class LayoutEditorVisualRenderer {
                 // Fixed width column
                 return (width / 12) * 100;
             } else {
-                // Auto column (share remaining with other autos)
-                const remainingWidth = 12 - totalFixedWidth;
-                return (remainingWidth / autoColumnCount / 12) * 100;
+                // Auto column: shares remaining space with other auto columns
+                const autoShare = remainingWidth / autoColumnCount;
+                return (autoShare / 12) * 100;
             }
         }
     }
@@ -353,15 +359,16 @@ class LayoutEditorVisualRenderer {
             return;
         }
         
-        // Validate: check if total would exceed 12
+        // Validate: check if total would exceed 11 (must leave at least 1 for Column 1 which is always auto)
         const section = this.findSectionByFieldname(sectionFieldname);
         if (section && newWidth > 0) {
             const otherColumnsTotal = this.calculateOtherColumnsWidth(section, columnIndex);
             const newTotal = otherColumnsTotal + newWidth;
             
-            if (newTotal > 12) {
+            if (newTotal > 11) {
                 LayoutEditorUtils.showError(
-                    `Cannot set width to ${newWidth}. Other columns use ${otherColumnsTotal}, total would be ${newTotal} (max 12).`,
+                    `Cannot set width to ${newWidth}. Other columns use ${otherColumnsTotal}, total would be ${newTotal}. ` +
+                    `Max is 11 (must leave at least 1/12 for Column 1).`,
                     'Width Exceeds Grid'
                 );
                 // Reset dropdown to previous value
