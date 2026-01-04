@@ -51,7 +51,10 @@ class LayoutEditorWidget {
             this.onFieldSelected(field);
         });
         
-        // Initialize drag & drop (Phase 2)
+        // Connect drag drop handler to visual renderer
+        this.visualRenderer.setDragDropHandler(this.dragDropHandler);
+        
+        // Initialize drag & drop
         this.dragDropHandler.initialize();
         
         // Render empty state

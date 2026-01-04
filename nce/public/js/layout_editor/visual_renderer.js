@@ -11,6 +11,7 @@ class LayoutEditorVisualRenderer {
         this.utils = LayoutEditorUtils;
         this.selectedField = null;
         this.onFieldSelect = null; // Callback when field is selected
+        this.dragDropHandler = null; // Set by widget after initialization
     }
     
     /**
@@ -36,6 +37,9 @@ class LayoutEditorVisualRenderer {
             const tabContent = this.renderTabContent(currentTab);
             this.container.appendChild(tabContent);
         }
+        
+        // Initialize drag and drop after rendering
+        this.initializeDragDrop();
     }
     
     /**
@@ -298,6 +302,26 @@ class LayoutEditorVisualRenderer {
      */
     setOnFieldSelect(callback) {
         this.onFieldSelect = callback;
+    }
+    
+    /**
+     * Set drag drop handler reference
+     */
+    setDragDropHandler(handler) {
+        this.dragDropHandler = handler;
+    }
+    
+    /**
+     * Initialize drag and drop for current sections
+     * Called after render to setup drag handlers
+     */
+    initializeDragDrop() {
+        if (!this.dragDropHandler) return;
+        
+        const tabContent = this.container.querySelector('.le-tab-content');
+        if (tabContent) {
+            this.dragDropHandler.setupSectionDrag(tabContent);
+        }
     }
 }
 

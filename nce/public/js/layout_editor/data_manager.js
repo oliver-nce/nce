@@ -334,6 +334,181 @@ class LayoutEditorDataManager {
     getUpdatedFieldsJSON() {
         return JSON.stringify(this.rawFields, null, 2);
     }
+    
+    /**
+     * Move a section within the current tab
+     * @param {number} fromIndex - Current section index in tab
+     * @param {number} toIndex - Target section index in tab
+     * @returns {boolean} Success
+     */
+    moveSectionInCurrentTab(fromIndex, toIndex) {
+        const currentTab = this.structure.tabs[this.structure.currentTab];
+        if (!currentTab || !currentTab.sections) {
+            console.error('No current tab or sections');
+            return false;
+        }
+        
+        const sections = currentTab.sections;
+        
+        // Validate indices
+        if (fromIndex < 0 || fromIndex >= sections.length ||
+            toIndex < 0 || toIndex >= sections.length ||
+            fromIndex === toIndex) {
+            console.error('Invalid section indices:', fromIndex, toIndex);
+            return false;
+        }
+        
+        // Get the section being moved
+        const movingSection = sections[fromIndex];
+        
+        // Find the raw field indices for the sections
+        const sectionRanges = this.getSectionFieldRanges(currentTab);
+        
+        if (!sectionRanges[fromIndex] || !sectionRanges[toIndex]) {
+            console.error('Could not determine section field ranges');
+            return false;
+        }
+        
+        // Extract the fields for the moving section
+        const movingRange = sectionRanges[fromIndex];
+        const movingFields = this.rawFields.splice(movingRange.start, movingRange.count);
+        
+        // Recalculate ranges after extraction
+        const updatedRanges = this.getSectionFieldRanges(currentTab);
+        
+        // Find new insertion point
+        let insertIndex;
+        if (toIndex === 0) {
+            // Moving to first position - insert at start of tab's fields
+            insertIndex = this.getTabStartIndex(currentTab);
+        } else if (fromIndex < toIndex) {
+            // Moving down - insert after the target section
+            const targetRange = updatedRanges[toIndex - 1]; // -1 because we removed one
+            insertIndex = targetRange ? targetRange.start + targetRange.count : this.rawFields.length;
+        } else {
+            // Moving up - insert before the target section
+            const targetRange = updatedRanges[toIndex];
+            insertIndex = targetRange ? targetRange.start : 0;
+        }
+        
+        // Insert the fields at new position
+        this.rawFields.splice(insertIndex, 0, ...movingFields);
+        
+        // Rebuild structure
+        this.buildStructure();
+        
+        // Mark as changed - track idx changes for all affected fields
+        this.trackSectionReorder();
+        
+        console.log(`Section moved from ${fromIndex} to ${toIndex}`);
+        return true;
+    }
+    
+    /**
+     * Get the field index ranges for each section in a tab
+     * Returns array of { start, count, sectionFieldname }
+     */
+    getSectionFieldRanges(tab) {
+        const ranges = [];
+        
+        if (!tab.sections) return ranges;
+        
+        tab.sections.forEach(section => {
+            const sectionFieldname = section.fieldname;
+            
+            // Find the section break field index
+            const sectionIdx = this.rawFields.findIndex(f => f.fieldname === sectionFieldname);
+            
+            if (sectionIdx === -1) {
+                // Default/implicit section - find first field
+                if (section.columns && section.columns[0] && section.columns[0].fields[0]) {
+                    const firstField = section.columns[0].fields[0];
+                    const firstIdx = this.rawFields.findIndex(f => f.fieldname === firstField.fieldname);
+                    ranges.push({
+                        start: firstIdx,
+                        count: this.countSectionFields(section),
+                        sectionFieldname: sectionFieldname
+                    });
+                }
+                return;
+            }
+            
+            // Count fields in this section (section break + columns + fields)
+            const fieldCount = this.countSectionFields(section) + 1; // +1 for section break itself
+            
+            ranges.push({
+                start: sectionIdx,
+                count: fieldCount,
+                sectionFieldname: sectionFieldname
+            });
+        });
+        
+        return ranges;
+    }
+    
+    /**
+     * Count total fields in a section (columns + fields, not the section break itself)
+     */
+    countSectionFields(section) {
+        let count = 0;
+        
+        if (section.columns) {
+            section.columns.forEach((column, colIdx) => {
+                // Add column break (except for first column)
+                if (colIdx > 0) count++;
+                
+                // Add fields in column
+                if (column.fields) {
+                    count += column.fields.length;
+                }
+            });
+        }
+        
+        return count;
+    }
+    
+    /**
+     * Get the starting raw field index for a tab
+     */
+    getTabStartIndex(tab) {
+        if (tab.fieldname && !tab.fieldname.startsWith('_')) {
+            // Explicit tab break - find it
+            const idx = this.rawFields.findIndex(f => f.fieldname === tab.fieldname);
+            if (idx !== -1) return idx + 1; // After the tab break
+        }
+        
+        // Default tab - start at beginning
+        return 0;
+    }
+    
+    /**
+     * Track section reorder as idx changes
+     */
+    trackSectionReorder() {
+        // After reordering, all field positions may have changed
+        // We need to track idx changes for Property Setters
+        this.rawFields.forEach((field, newIdx) => {
+            const originalIdx = field._idx;
+            
+            if (originalIdx !== undefined && originalIdx !== newIdx) {
+                // idx changed - track it
+                if (!this.changes[field.fieldname]) {
+                    this.changes[field.fieldname] = {};
+                }
+                this.changes[field.fieldname].idx = newIdx;
+                
+                // Update the stored idx
+                field._idx = newIdx;
+            }
+        });
+        
+        this.hasUnsavedChanges = true;
+        
+        // Trigger callback
+        if (this.onChangeCallback) {
+            this.onChangeCallback('_reorder', 'idx', 'multiple');
+        }
+    }
 }
 
 

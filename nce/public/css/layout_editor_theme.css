@@ -401,7 +401,7 @@
     cursor: grabbing;
 }
 
-/* Drop Zones */
+/* Drop Zones (Field level) */
 .le-drop-zone {
     border: 2px dashed transparent;
     padding: 8px;
@@ -413,6 +413,56 @@
 .le-drop-zone.active {
     border-color: var(--le-drop-zone-border);
     background: var(--le-drop-zone-bg);
+}
+
+/* Section Drop Zones */
+.le-section-drop-zone {
+    height: 0;
+    overflow: hidden;
+    transition: all 0.2s ease;
+    margin: 0;
+    border-radius: 6px;
+}
+
+.le-section-drop-zone.visible {
+    height: 50px;
+    margin: 10px 0;
+    border: 2px dashed var(--le-color-gray-medium);
+    background: var(--le-bg-citron-ultra-light);
+}
+
+.le-section-drop-zone.active {
+    border-color: var(--le-brand-primary);
+    background: var(--le-drop-zone-bg);
+    box-shadow: 0 0 10px var(--le-selected-glow);
+}
+
+.le-drop-indicator {
+    display: none;
+    text-align: center;
+    padding: 12px;
+    color: var(--le-color-gray-dark);
+    font-weight: var(--le-font-weight-medium);
+    font-size: 13px;
+}
+
+.le-section-drop-zone.visible .le-drop-indicator {
+    display: block;
+}
+
+.le-section-drop-zone.active .le-drop-indicator {
+    color: var(--le-brand-secondary);
+}
+
+/* Dragging state */
+.le-section.le-dragging {
+    opacity: 0.5;
+    transform: scale(0.98);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.le-section-header:hover .le-drag-handle {
+    opacity: 1;
 }
 
 /* Tabs */
