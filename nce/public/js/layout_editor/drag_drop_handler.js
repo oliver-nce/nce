@@ -44,23 +44,22 @@ class LayoutEditorDragDropHandler {
         const header = sectionEl.querySelector('.le-section-header');
         if (!header) return;
         
-        // Make the entire section draggable, but only via the header
-        sectionEl.setAttribute('draggable', 'true');
+        // Store section index
         sectionEl.dataset.sectionIndex = sectionIndex;
         
-        // Drag start
-        sectionEl.addEventListener('dragstart', (e) => {
-            // Only allow drag from header area
-            if (!header.contains(e.target) && e.target !== header) {
-                e.preventDefault();
-                return;
-            }
-            
+        // Make the HEADER draggable (not the whole section)
+        header.setAttribute('draggable', 'true');
+        header.dataset.sectionIndex = sectionIndex;
+        
+        // Drag start - on header
+        header.addEventListener('dragstart', (e) => {
+            e.stopPropagation();
             this.onDragStart(e, sectionEl, sectionIndex);
         });
         
-        // Drag end
-        sectionEl.addEventListener('dragend', (e) => {
+        // Drag end - on header
+        header.addEventListener('dragend', (e) => {
+            e.stopPropagation();
             this.onDragEnd(e);
         });
         
@@ -70,6 +69,9 @@ class LayoutEditorDragDropHandler {
             dragHandle.style.cursor = 'grab';
             dragHandle.title = 'Drag to reorder section';
         }
+        
+        // Also style the header to indicate it's draggable
+        header.style.cursor = 'grab';
     }
     
     /**
@@ -146,15 +148,32 @@ class LayoutEditorDragDropHandler {
         event.dataTransfer.effectAllowed = 'move';
         event.dataTransfer.setData('text/plain', JSON.stringify(this.draggedData));
         
+        // Create a custom drag image (clone of section header)
+        const header = sectionEl.querySelector('.le-section-header');
+        if (header) {
+            const dragImage = header.cloneNode(true);
+            dragImage.style.width = header.offsetWidth + 'px';
+            dragImage.style.position = 'absolute';
+            dragImage.style.top = '-1000px';
+            dragImage.style.left = '-1000px';
+            dragImage.style.opacity = '0.8';
+            dragImage.style.background = '#D7DF23';
+            document.body.appendChild(dragImage);
+            event.dataTransfer.setDragImage(dragImage, 20, 20);
+            
+            // Remove drag image after a short delay
+            setTimeout(() => {
+                document.body.removeChild(dragImage);
+            }, 0);
+        }
+        
         // Add dragging class for styling
         sectionEl.classList.add('le-dragging');
         
-        // Show all drop zones
-        setTimeout(() => {
-            this.dropZones.forEach(zone => {
-                zone.classList.add('visible');
-            });
-        }, 0);
+        // Show all drop zones immediately
+        this.dropZones.forEach(zone => {
+            zone.classList.add('visible');
+        });
         
         console.log('Drag started: section', sectionIndex);
     }
