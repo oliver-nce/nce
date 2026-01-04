@@ -21,6 +21,17 @@ frappe.ui.form.on("Layout Editor", {
         // Hide Frappe's standard Save button (not needed - this is a tool, not a data form)
         frm.disable_save();
         
+        // Hide the old buttons (replaced by dropdown auto-load)
+        frm.set_df_property('load_json_button', 'hidden', 1);
+        frm.set_df_property('validate_json_button', 'hidden', 1);
+        frm.set_df_property('generate_prompt_button', 'hidden', 1);
+        
+        // Populate DocType dropdown with eligible DocTypes
+        if (!frm._doctypes_loaded) {
+            populate_doctype_dropdown(frm);
+            frm._doctypes_loaded = true;
+        }
+        
         // Initialize tabs if not already done
         if (!frm._tabs_initialized) {
             setup_tabs(frm);
@@ -40,12 +51,11 @@ frappe.ui.form.on("Layout Editor", {
                     <li>Hide standard fields</li>
                     <li>Change field properties</li>
                 </ul>
-                <p><strong>Workflow:</strong> Load JSON → Edit → Validate → Update Properties</p>
-                <p><strong>🎨 NEW:</strong> Switch to "Visual Editor" tab for drag-and-drop interface</p>
+                <p><strong>Workflow:</strong> Select DocType → Edit in Visual Editor → Preview → Apply</p>
             </div>
         `);
         
-        // Show "Update Properties" button if validated and not changed
+        // Show "Update Properties" button if validated and not changed (for JSON editor)
         if (frm.doc.__validated && !frm.doc.__json_changed) {
             if (!frm.custom_buttons["Update Properties"]) {
                 frm.add_custom_button(__("Update Properties"), function() {
@@ -60,34 +70,17 @@ frappe.ui.form.on("Layout Editor", {
         }
     },
     
-    load_json_button: function(frm) {
+    // Auto-load JSON when DocType is selected
+    target_doctype: function(frm) {
         if (!frm.doc.target_doctype) {
-            frappe.msgprint("Please select a DocType first");
+            // Cleared - reset the form
+            frm.set_value("json_editor", "");
+            frm.set_df_property('structure_preview', 'options', '');
             return;
         }
         
-        frappe.call({
-            method: "nce.wp_sync.doctype.layout_editor.layout_editor.load_doctype_json",
-            args: {
-                doctype_name: frm.doc.target_doctype
-            },
-            callback: function(r) {
-                if (r.message) {
-                    frm.set_value("json_editor", r.message.fields_json);
-                    frm.set_df_property('structure_preview', 'options', r.message.structure_html);
-                    
-                    // Reset validation state
-                    frm.doc.__validated = false;
-                    frm.doc.__json_changed = false;
-                    frm.refresh();
-                    
-                    frappe.show_alert({
-                        message: `Loaded ${r.message.total_fields} fields from ${frm.doc.target_doctype}`,
-                        indicator: 'green'
-                    });
-                }
-            }
-        });
+        // Auto-load the DocType JSON
+        load_doctype_json(frm);
     },
     
     json_editor: function(frm) {
@@ -210,6 +203,63 @@ frappe.ui.form.on("Layout Editor", {
     }
 });
 
+
+/**
+ * Populate DocType dropdown with eligible DocTypes (filtered Link field)
+ */
+function populate_doctype_dropdown(frm) {
+    // Fetch eligible DocTypes and set as filter for the Link field
+    frappe.call({
+        method: "nce.wp_sync.doctype.layout_editor.layout_editor.get_eligible_doctypes",
+        callback: function(r) {
+            if (r.message && r.message.length > 0) {
+                const eligible_doctypes = r.message;
+                
+                // Set query filter for the Link field
+                frm.set_query('target_doctype', function() {
+                    return {
+                        filters: {
+                            name: ['in', eligible_doctypes]
+                        }
+                    };
+                });
+                
+                // Update description to show count
+                frm.set_df_property('target_doctype', 'description', 
+                    `${eligible_doctypes.length} eligible DocTypes (WP-prefixed and Sync Task targets)`
+                );
+            }
+        }
+    });
+}
+
+/**
+ * Load DocType JSON (called automatically when DocType is selected)
+ */
+function load_doctype_json(frm) {
+    frappe.call({
+        method: "nce.wp_sync.doctype.layout_editor.layout_editor.load_doctype_json",
+        args: {
+            doctype_name: frm.doc.target_doctype
+        },
+        callback: function(r) {
+            if (r.message) {
+                frm.set_value("json_editor", r.message.fields_json);
+                frm.set_df_property('structure_preview', 'options', r.message.structure_html);
+                
+                // Reset validation state
+                frm.doc.__validated = false;
+                frm.doc.__json_changed = false;
+                frm.refresh();
+                
+                frappe.show_alert({
+                    message: `Loaded ${r.message.total_fields} fields from ${frm.doc.target_doctype}`,
+                    indicator: 'green'
+                }, 3);
+            }
+        }
+    });
+}
 
 function update_properties(frm) {
     if (!frm.doc.target_doctype || !frm.doc.json_editor) {

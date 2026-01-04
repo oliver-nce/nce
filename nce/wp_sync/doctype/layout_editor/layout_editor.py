@@ -11,6 +11,37 @@ class LayoutEditor(Document):
 
 
 @frappe.whitelist()
+def get_eligible_doctypes():
+    """
+    Get DocTypes eligible for layout editing:
+    - DocTypes starting with 'WP' (WP_, WP ...)
+    - DocTypes that are target_doctype in WP Sync Tasks
+    """
+    eligible = set()
+    
+    # Get DocTypes starting with WP
+    wp_doctypes = frappe.get_all(
+        "DocType",
+        filters=[["name", "like", "WP%"]],
+        pluck="name"
+    )
+    eligible.update(wp_doctypes)
+    
+    # Get target DocTypes from WP Sync Tasks
+    sync_tasks = frappe.get_all(
+        "WP Sync Task",
+        filters={"target_doctype": ["is", "set"]},
+        pluck="target_doctype"
+    )
+    eligible.update(sync_tasks)
+    
+    # Sort alphabetically
+    result = sorted(list(eligible))
+    
+    return result
+
+
+@frappe.whitelist()
 def load_doctype_json(doctype_name):
     """Load the fields JSON for a DocType - includes ALL properties from base + Property Setters"""
     if not doctype_name:
