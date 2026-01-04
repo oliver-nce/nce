@@ -1,6 +1,6 @@
 """NCE Frappe App - WordPress to Frappe Sync"""
 
-__version__ = "1.0.64"
+__version__ = "1.0.65"
 MAJOR_VERSION = 1
 
 

@@ -559,24 +559,32 @@ class LayoutEditorDataManager {
             ? (parseInt(movingColumn.width) || 0) 
             : 0;
         
-        // Extract the fields for the moving column from rawFields
+        // Special case: Moving TO position 0 from position > 0
+        // The moving column has a Column Break that should NOT move with it
+        // Instead, it stays to mark the new position of the old Col 0 fields
+        if (toIndex === 0 && fromIndex > 0) {
+            return this.moveColumnToFirstPosition(sectionFieldname, fromIndex, columnRanges);
+        }
+        
+        // Special case: Moving FROM position 0 to position > 0
+        // Need to insert a Column Break before the moving fields
+        if (fromIndex === 0 && toIndex > 0) {
+            return this.moveColumnFromFirstPosition(sectionFieldname, toIndex, columnRanges);
+        }
+        
+        // Normal case: moving between positions > 0
         const movingRange = columnRanges[fromIndex];
         const movingFields = this.rawFields.splice(movingRange.start, movingRange.count);
         console.log('Extracted fields:', movingFields.map(f => f.fieldname));
         
         // Recalculate ranges after extraction
         const updatedRanges = this.getColumnFieldRanges(sectionFieldname);
-        console.log('Updated ranges after extraction:', updatedRanges);
         
         // Calculate insertion point
         let insertIndex;
-        if (toIndex === 0) {
-            // Moving to first column position - insert at section start (after Section Break)
-            const sectionIdx = this.rawFields.findIndex(f => f.fieldname === sectionFieldname);
-            insertIndex = sectionIdx + 1;
-        } else if (fromIndex < toIndex) {
+        if (fromIndex < toIndex) {
             // Moving right - insert after the target column
-            const adjustedToIndex = toIndex - 1; // Adjust because we removed one
+            const adjustedToIndex = toIndex - 1;
             if (updatedRanges[adjustedToIndex]) {
                 insertIndex = updatedRanges[adjustedToIndex].start + updatedRanges[adjustedToIndex].count;
             } else {
@@ -603,6 +611,105 @@ class LayoutEditorDataManager {
         this.trackSectionReorder();
         
         console.log(`Column moved from ${fromIndex} to ${toIndex} in section ${sectionFieldname}`);
+        return true;
+    }
+    
+    /**
+     * Move a column TO position 0 (first column)
+     * The Column Break stays to mark the new Col 1 (old Col 0 fields)
+     */
+    moveColumnToFirstPosition(sectionFieldname, fromIndex, columnRanges) {
+        console.log(`Moving column ${fromIndex} to position 0`);
+        
+        const movingRange = columnRanges[fromIndex];
+        
+        // Get the fields - but SKIP the Column Break (first field if fromIndex > 0)
+        const allMovingFields = this.rawFields.slice(movingRange.start, movingRange.start + movingRange.count);
+        
+        // Separate Column Break from data fields
+        const columnBreak = allMovingFields.find(f => f.fieldtype === 'Column Break');
+        const dataFields = allMovingFields.filter(f => f.fieldtype !== 'Column Break');
+        
+        console.log('Column Break:', columnBreak?.fieldname);
+        console.log('Data fields:', dataFields.map(f => f.fieldname));
+        
+        if (dataFields.length === 0) {
+            console.error('No data fields to move');
+            return false;
+        }
+        
+        // Remove ONLY the data fields (leave Column Break in place)
+        // First, find their indices
+        const dataFieldIndices = [];
+        for (let i = movingRange.start; i < movingRange.start + movingRange.count; i++) {
+            if (this.rawFields[i].fieldtype !== 'Column Break') {
+                dataFieldIndices.push(i);
+            }
+        }
+        
+        // Remove data fields from highest index to lowest (to preserve indices)
+        for (let i = dataFieldIndices.length - 1; i >= 0; i--) {
+            this.rawFields.splice(dataFieldIndices[i], 1);
+        }
+        
+        // Insert data fields at position 0 (right after Section Break)
+        const sectionIdx = this.rawFields.findIndex(f => f.fieldname === sectionFieldname);
+        const insertIndex = sectionIdx + 1;
+        
+        this.rawFields.splice(insertIndex, 0, ...dataFields);
+        
+        console.log('Moved data fields to position 0');
+        
+        // Rebuild and track changes
+        this.buildStructure();
+        this.trackSectionReorder();
+        
+        return true;
+    }
+    
+    /**
+     * Move a column FROM position 0 to another position
+     * Need to add a Column Break before the moving fields
+     */
+    moveColumnFromFirstPosition(sectionFieldname, toIndex, columnRanges) {
+        console.log(`Moving column 0 to position ${toIndex}`);
+        
+        const movingRange = columnRanges[0]; // Position 0
+        
+        // Get the fields from position 0 (no Column Break here)
+        const dataFields = this.rawFields.slice(movingRange.start, movingRange.start + movingRange.count);
+        console.log('Data fields from Col 0:', dataFields.map(f => f.fieldname));
+        
+        // Remove these fields
+        this.rawFields.splice(movingRange.start, movingRange.count);
+        
+        // Find the target Column Break (which will now become position 0's boundary)
+        const updatedRanges = this.getColumnFieldRanges(sectionFieldname);
+        
+        // Get the Column Break that was at toIndex (now at toIndex-1 after removal)
+        // This Column Break will "absorb" the old position 0 fields
+        const targetRange = updatedRanges[toIndex - 1];
+        
+        if (targetRange) {
+            // Insert after this column's fields
+            const insertIndex = targetRange.start + targetRange.count;
+            
+            // We need to add a Column Break before our data fields
+            // Create a synthetic Column Break entry
+            const newColumnBreak = {
+                fieldtype: 'Column Break',
+                fieldname: `column_break_moved_${Date.now()}`,
+                label: ''
+            };
+            
+            this.rawFields.splice(insertIndex, 0, newColumnBreak, ...dataFields);
+            console.log('Inserted Column Break and data fields at position', insertIndex);
+        }
+        
+        // Rebuild and track changes
+        this.buildStructure();
+        this.trackSectionReorder();
+        
         return true;
     }
     
