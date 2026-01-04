@@ -177,11 +177,19 @@ class LayoutEditorVisualRenderer {
      */
     renderColumns(columns, sectionFieldname) {
         const columnsContainer = this.utils.createElement('div', ['le-columns']);
+        columnsContainer.dataset.sectionFieldname = sectionFieldname;
         
         columns.forEach((column, index) => {
             const columnEl = this.renderColumn(column, index, sectionFieldname, columns.length, columns);
             columnsContainer.appendChild(columnEl);
         });
+        
+        // Setup column drag after a short delay (to ensure DOM is ready)
+        if (this.dragDropHandler) {
+            setTimeout(() => {
+                this.dragDropHandler.setupColumnDrag(columnsContainer, sectionFieldname);
+            }, 0);
+        }
         
         return columnsContainer;
     }

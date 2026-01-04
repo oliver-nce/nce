@@ -1,6 +1,6 @@
 /**
  * Drag & Drop Handler
- * Handles drag and drop functionality for sections (Phase 2)
+ * Handles drag and drop functionality for sections and columns
  */
 
 class LayoutEditorDragDropHandler {
@@ -10,14 +10,15 @@ class LayoutEditorDragDropHandler {
         this.draggedElement = null;
         this.draggedData = null;
         this.dropZones = [];
+        this.columnDropZones = [];
         this.placeholder = null;
     }
     
     /**
-     * Initialize drag and drop for sections
+     * Initialize drag and drop
      */
     initialize() {
-        console.log('Drag & Drop Handler: Initializing section drag & drop');
+        console.log('Drag & Drop Handler: Initializing section & column drag & drop');
     }
     
     /**
@@ -240,6 +241,227 @@ class LayoutEditorDragDropHandler {
             LayoutEditorUtils.showAlert('Section moved! Click "Preview Changes" to apply.', 'green');
         } else {
             LayoutEditorUtils.showAlert('Failed to move section', 'red');
+        }
+    }
+    
+    // =============================================
+    // COLUMN DRAG & DROP
+    // =============================================
+    
+    /**
+     * Setup drag handlers for columns within a section
+     */
+    setupColumnDrag(columnsContainer, sectionFieldname) {
+        if (!columnsContainer) return;
+        
+        const columns = columnsContainer.querySelectorAll('.le-column');
+        
+        columns.forEach((column, index) => {
+            this.makeColumnDraggable(column, index, sectionFieldname);
+        });
+        
+        // Create drop zones between columns
+        this.createColumnDropZones(columnsContainer, columns.length, sectionFieldname);
+    }
+    
+    /**
+     * Make a column draggable
+     */
+    makeColumnDraggable(columnEl, columnIndex, sectionFieldname) {
+        const header = columnEl.querySelector('.le-column-header');
+        if (!header) return;
+        
+        // Store column data
+        columnEl.dataset.columnIndex = columnIndex;
+        columnEl.dataset.sectionFieldname = sectionFieldname;
+        
+        // Make the header draggable
+        header.setAttribute('draggable', 'true');
+        header.dataset.columnIndex = columnIndex;
+        header.dataset.sectionFieldname = sectionFieldname;
+        
+        // Drag start
+        header.addEventListener('dragstart', (e) => {
+            e.stopPropagation();
+            this.onColumnDragStart(e, columnEl, columnIndex, sectionFieldname);
+        });
+        
+        // Drag end
+        header.addEventListener('dragend', (e) => {
+            e.stopPropagation();
+            this.onColumnDragEnd(e);
+        });
+        
+        // Style header as draggable
+        header.style.cursor = 'grab';
+        header.title = 'Drag to reorder column';
+    }
+    
+    /**
+     * Create drop zones between columns
+     */
+    createColumnDropZones(container, columnCount, sectionFieldname) {
+        // Remove existing column drop zones in this container
+        container.querySelectorAll('.le-column-drop-zone').forEach(z => z.remove());
+        
+        const columns = container.querySelectorAll('.le-column');
+        
+        // Create drop zone before first column
+        const firstZone = this.createColumnDropZone(0, sectionFieldname);
+        if (columns[0]) {
+            container.insertBefore(firstZone, columns[0]);
+        } else {
+            container.appendChild(firstZone);
+        }
+        
+        // Create drop zones after each column
+        columns.forEach((column, index) => {
+            const zone = this.createColumnDropZone(index + 1, sectionFieldname);
+            column.after(zone);
+        });
+    }
+    
+    /**
+     * Create a column drop zone
+     */
+    createColumnDropZone(targetIndex, sectionFieldname) {
+        const zone = document.createElement('div');
+        zone.className = 'le-column-drop-zone';
+        zone.dataset.targetIndex = targetIndex;
+        zone.dataset.sectionFieldname = sectionFieldname;
+        
+        // Visual indicator
+        zone.innerHTML = '<div class="le-column-drop-indicator"></div>';
+        
+        // Drag over
+        zone.addEventListener('dragover', (e) => {
+            if (this.draggedData && this.draggedData.type === 'column' && 
+                this.draggedData.sectionFieldname === sectionFieldname) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                zone.classList.add('active');
+            }
+        });
+        
+        // Drag leave
+        zone.addEventListener('dragleave', (e) => {
+            zone.classList.remove('active');
+        });
+        
+        // Drop
+        zone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            zone.classList.remove('active');
+            if (this.draggedData && this.draggedData.type === 'column') {
+                this.onColumnDrop(e, parseInt(zone.dataset.targetIndex), sectionFieldname);
+            }
+        });
+        
+        return zone;
+    }
+    
+    /**
+     * Handle column drag start
+     */
+    onColumnDragStart(event, columnEl, columnIndex, sectionFieldname) {
+        this.draggedElement = columnEl;
+        this.draggedData = {
+            type: 'column',
+            fromIndex: columnIndex,
+            sectionFieldname: sectionFieldname
+        };
+        
+        // Set drag data
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', JSON.stringify(this.draggedData));
+        
+        // Create drag image
+        const header = columnEl.querySelector('.le-column-header');
+        if (header) {
+            const dragImage = header.cloneNode(true);
+            dragImage.style.width = '100px';
+            dragImage.style.position = 'absolute';
+            dragImage.style.top = '-1000px';
+            dragImage.style.left = '-1000px';
+            dragImage.style.opacity = '0.8';
+            dragImage.style.background = '#D7DF23';
+            dragImage.style.padding = '8px';
+            dragImage.style.borderRadius = '4px';
+            document.body.appendChild(dragImage);
+            event.dataTransfer.setDragImage(dragImage, 50, 15);
+            setTimeout(() => document.body.removeChild(dragImage), 0);
+        }
+        
+        // Add dragging class
+        columnEl.classList.add('le-dragging');
+        
+        // Show column drop zones in this section only
+        const section = columnEl.closest('.le-section');
+        if (section) {
+            section.querySelectorAll('.le-column-drop-zone').forEach(zone => {
+                zone.classList.add('visible');
+            });
+        }
+        
+        console.log('Column drag started:', columnIndex, 'in section:', sectionFieldname);
+    }
+    
+    /**
+     * Handle column drag end
+     */
+    onColumnDragEnd(event) {
+        // Remove dragging class
+        if (this.draggedElement) {
+            this.draggedElement.classList.remove('le-dragging');
+        }
+        
+        // Hide all column drop zones
+        document.querySelectorAll('.le-column-drop-zone').forEach(zone => {
+            zone.classList.remove('visible', 'active');
+        });
+        
+        // Reset state
+        this.draggedElement = null;
+        this.draggedData = null;
+        
+        console.log('Column drag ended');
+    }
+    
+    /**
+     * Handle column drop
+     */
+    onColumnDrop(event, targetIndex, sectionFieldname) {
+        if (!this.draggedData || this.draggedData.type !== 'column') {
+            return;
+        }
+        
+        const fromIndex = this.draggedData.fromIndex;
+        
+        // Don't move if dropping in same position
+        if (fromIndex === targetIndex || fromIndex === targetIndex - 1) {
+            console.log('No column move needed - same position');
+            return;
+        }
+        
+        // Adjust target index if moving right
+        let actualTargetIndex = targetIndex;
+        if (fromIndex < targetIndex) {
+            actualTargetIndex = targetIndex - 1;
+        }
+        
+        console.log(`Moving column from ${fromIndex} to ${actualTargetIndex} in section ${sectionFieldname}`);
+        
+        // Call data manager to perform the move
+        const success = this.dataManager.moveColumnInSection(sectionFieldname, fromIndex, actualTargetIndex);
+        
+        if (success) {
+            // Re-render
+            this.visualRenderer.render();
+            
+            // Show feedback
+            LayoutEditorUtils.showAlert('Column moved! Click "Preview Changes" to apply.', 'green');
+        } else {
+            LayoutEditorUtils.showAlert('Failed to move column', 'red');
         }
     }
 }

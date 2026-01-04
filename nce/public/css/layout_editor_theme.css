@@ -465,6 +465,46 @@
     opacity: 1;
 }
 
+/* Column Drop Zones */
+.le-column-drop-zone {
+    width: 4px;
+    min-height: 50px;
+    background: transparent;
+    border-radius: 2px;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    display: none;
+}
+
+.le-column-drop-zone.visible {
+    display: block;
+    width: 8px;
+    background: var(--le-color-gray-light);
+    margin: 0 2px;
+}
+
+.le-column-drop-zone.active {
+    width: 12px;
+    background: var(--le-brand-primary);
+    box-shadow: 0 0 8px var(--le-selected-glow);
+}
+
+.le-column-drop-indicator {
+    height: 100%;
+    width: 100%;
+    border-radius: 2px;
+}
+
+/* Column dragging state */
+.le-column.le-dragging {
+    opacity: 0.4;
+    transform: scale(0.95);
+}
+
+.le-column-header:hover {
+    background: var(--le-bg-citron-light);
+}
+
 /* Tabs */
 .le-tabs {
     display: flex;
