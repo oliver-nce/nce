@@ -105,6 +105,17 @@ class LayoutEditorWidget {
      * Create toolbar with preview button
      */
     createToolbar() {
+        // DocType indicator (left side)
+        this.doctypeIndicator = document.createElement('span');
+        this.doctypeIndicator.className = 'layout-editor-doctype-indicator';
+        this.doctypeIndicator.textContent = 'No DocType loaded';
+        this.toolbarEl.appendChild(this.doctypeIndicator);
+        
+        // Spacer
+        const spacer = document.createElement('span');
+        spacer.style.flex = '1';
+        this.toolbarEl.appendChild(spacer);
+        
         // Preview Changes button (validates before saving)
         this.previewBtn = document.createElement('button');
         this.previewBtn.className = 'btn le-btn-primary btn-sm';
@@ -125,6 +136,15 @@ class LayoutEditorWidget {
         this.dataManager.setOnChangeCallback(() => {
             this.onDataChanged();
         });
+    }
+    
+    /**
+     * Update the DocType indicator in toolbar
+     */
+    updateDoctypeIndicator(doctypeName) {
+        if (this.doctypeIndicator) {
+            this.doctypeIndicator.innerHTML = `<strong>📋 Editing:</strong> ${doctypeName || 'None'}`;
+        }
     }
     
     /**
@@ -263,9 +283,18 @@ class LayoutEditorWidget {
             // Show loading
             LayoutEditorUtils.showAlert('Loading DocType...', 'blue');
             
+            // Update DocType indicator immediately
+            this.updateDoctypeIndicator(doctypeName);
+            
             // Load data
             const result = await this.dataManager.loadDocType(doctypeName);
             this.currentDocType = doctypeName;
+            
+            // Reset change state
+            this.dataManager.clearChanges();
+            this.previewBtn.disabled = true;
+            this.statusEl.textContent = '✓ No changes';
+            this.statusEl.className = 'layout-editor-status';
             
             // Render visual structure
             this.visualRenderer.render();

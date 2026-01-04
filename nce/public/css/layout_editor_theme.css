@@ -754,6 +754,21 @@
     font-size: 14px;
 }
 
+/* DocType indicator in toolbar */
+.layout-editor-doctype-indicator {
+    font-size: 14px;
+    font-weight: var(--le-font-weight-medium);
+    color: var(--le-brand-secondary);
+    padding: 4px 12px;
+    background: var(--le-color-white);
+    border: 1px solid var(--le-color-gray-medium);
+    border-radius: 4px;
+}
+
+.layout-editor-doctype-indicator strong {
+    color: var(--le-color-gray-dark);
+}
+
 .layout-editor-status {
     font-size: 14px;
     font-weight: var(--le-font-weight-medium);
@@ -761,7 +776,7 @@
     align-items: center;
     gap: 5px;
     color: var(--le-color-gray-dark);
-    margin-left: auto;
+    margin-left: 15px;
 }
 
 .layout-editor-status.status-unsaved {

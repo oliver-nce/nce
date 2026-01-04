@@ -81,11 +81,21 @@ frappe.ui.form.on("Layout Editor", {
             // Cleared - reset the form
             frm.set_value("json_editor", "");
             frm.set_df_property('structure_preview', 'options', '');
+            // Also reset Visual Editor
+            if (layoutEditorWidget) {
+                layoutEditorWidget.destroy();
+                layoutEditorWidget = null;
+            }
             return;
         }
         
         // Auto-load the DocType JSON
         load_doctype_json(frm);
+        
+        // Refresh Visual Editor if it's initialized
+        if (layoutEditorWidget && layoutEditorWidget.isInitialized) {
+            layoutEditorWidget.loadDocType(frm.doc.target_doctype);
+        }
     },
     
     json_editor: function(frm) {
