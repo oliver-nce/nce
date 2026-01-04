@@ -27,6 +27,26 @@ def extend_bootinfo(bootinfo):
     bootinfo.nce_branch = get_branch()
 
 
+@frappe.whitelist()
+def clear_all_caches():
+    """
+    Clear all Frappe caches (Redis, DocType cache, defaults).
+    Restricted to System Manager role.
+    
+    Returns:
+        dict: Success status and message
+    """
+    frappe.only_for("System Manager")
+    
+    # Clear all server-side caches
+    frappe.clear_cache()
+    
+    return {
+        "success": True,
+        "message": "All caches cleared successfully"
+    }
+
+
 def get_version_info():
     """Get version info with timestamp from git."""
     try:
