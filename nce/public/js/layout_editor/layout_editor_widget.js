@@ -102,7 +102,7 @@ class LayoutEditorWidget {
     }
     
     /**
-     * Create toolbar with preview button
+     * Create toolbar with preview and revert buttons
      */
     createToolbar() {
         // DocType indicator (left side)
@@ -115,6 +115,17 @@ class LayoutEditorWidget {
         const spacer = document.createElement('span');
         spacer.style.flex = '1';
         this.toolbarEl.appendChild(spacer);
+        
+        // Revert Changes button
+        this.revertBtn = document.createElement('button');
+        this.revertBtn.className = 'btn btn-default btn-sm';
+        this.revertBtn.textContent = '↩️ Revert Changes';
+        this.revertBtn.disabled = true;
+        this.revertBtn.title = 'Discard all changes and reload original DocType';
+        this.revertBtn.addEventListener('click', () => {
+            this.revertChanges();
+        });
+        this.toolbarEl.appendChild(this.revertBtn);
         
         // Preview Changes button (validates before saving)
         this.previewBtn = document.createElement('button');
@@ -152,8 +163,55 @@ class LayoutEditorWidget {
      */
     onDataChanged() {
         this.previewBtn.disabled = false;
+        this.revertBtn.disabled = false;
         this.statusEl.textContent = '● Unsaved changes';
         this.statusEl.className = 'layout-editor-status status-unsaved';
+    }
+    
+    /**
+     * Revert all changes - reset to original loaded state
+     */
+    revertChanges() {
+        if (!this.dataManager.hasChanges()) {
+            LayoutEditorUtils.showAlert('No changes to revert', 'blue');
+            return;
+        }
+        
+        frappe.confirm(
+            `<h4>Revert All Changes?</h4>
+            <p>This will discard all unsaved changes (property edits and reordering) and reload the original DocType layout.</p>
+            <p><strong>This cannot be undone.</strong></p>`,
+            () => {
+                // User confirmed - revert
+                this.dataManager.revertChanges();
+                
+                // Re-render the visual editor
+                this.visualRenderer.render();
+                
+                // Reset properties panel
+                this.propertiesPanel.renderEmpty();
+                
+                // Update UI state
+                this.previewBtn.disabled = true;
+                this.revertBtn.disabled = true;
+                this.statusEl.textContent = '✓ Reverted to original';
+                this.statusEl.className = 'layout-editor-status status-saved';
+                
+                LayoutEditorUtils.showAlert('Changes reverted to original', 'green');
+                
+                // Reset status after 3 seconds
+                setTimeout(() => {
+                    if (!this.dataManager.hasChanges()) {
+                        this.statusEl.textContent = '✓ No changes';
+                        this.statusEl.className = 'layout-editor-status';
+                    }
+                }, 3000);
+            },
+            () => {
+                // User cancelled
+                LayoutEditorUtils.showAlert('Revert cancelled', 'blue');
+            }
+        );
     }
     
     /**
@@ -293,6 +351,7 @@ class LayoutEditorWidget {
             // Reset change state
             this.dataManager.clearChanges();
             this.previewBtn.disabled = true;
+            this.revertBtn.disabled = true;
             this.statusEl.textContent = '✓ No changes';
             this.statusEl.className = 'layout-editor-status';
             

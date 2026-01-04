@@ -1,19 +1,37 @@
 /**
  * Data Manager
  * Handles loading, parsing, and structuring DocType data
+ * 
+ * Architecture (v1.0.67):
+ * - rawFields: Original loaded state (pristine until save)
+ * - shadowJSON: Working copy for ALL property edits
+ * - virtualOrder: Display order structure for drag/drop (fieldnames only)
  */
 
 class LayoutEditorDataManager {
     constructor() {
+        // Original loaded state - pristine until save
         this.rawFields = [];
+        
+        // Working copy for property edits
+        this.shadowJSON = [];
+        
+        // Virtual order for display/reordering (structure with fieldnames)
+        this.virtualOrder = {
+            tabs: []
+        };
+        
+        // Legacy structure (built from virtualOrder + shadowJSON for rendering)
         this.structure = {
             tabs: [],
             currentTab: null
         };
+        
         this.doctype = null;
         this.fieldTypes = new LayoutEditorFieldTypes();
         this.changes = {}; // Track changes: { fieldname: { property: value } }
         this.hasUnsavedChanges = false;
+        this.hasOrderChanges = false; // Separate flag for order changes
         this.onChangeCallback = null;
     }
     
@@ -31,10 +49,20 @@ class LayoutEditorDataManager {
                     if (response.message) {
                         try {
                             // Parse the JSON response
-                            this.rawFields = JSON.parse(response.message.fields_json);
+                            const fields = JSON.parse(response.message.fields_json);
+                            
+                            // Store original (pristine)
+                            this.rawFields = JSON.parse(JSON.stringify(fields));
+                            
+                            // Create working copy (shadowJSON)
+                            this.shadowJSON = JSON.parse(JSON.stringify(fields));
+                            
                             this.doctype = doctypeName;
                             
-                            // Build structure
+                            // Build virtual order structure
+                            this.buildVirtualOrder();
+                            
+                            // Build legacy structure for rendering
                             this.buildStructure();
                             
                             resolve({
@@ -57,102 +85,81 @@ class LayoutEditorDataManager {
     }
     
     /**
-     * Build hierarchical structure from flat field list
-     * Structure: Tabs → Sections → Columns → Fields
+     * Build virtual order structure from shadowJSON
+     * This stores ONLY fieldnames for ordering, not the full field data
      */
-    buildStructure() {
-        this.structure = {
+    buildVirtualOrder() {
+        this.virtualOrder = {
             tabs: [],
-            currentTab: null
+            currentTab: 0
         };
         
         let currentTab = null;
         let currentSection = null;
         let currentColumn = null;
         
-        this.rawFields.forEach((field, index) => {
-            field._idx = index; // Store original index
-            
-            // Tab Break - start new tab (explicit Tab Break field)
+        this.shadowJSON.forEach((field, index) => {
+            // Tab Break - start new tab
             if (this.fieldTypes.isTabBreak(field.fieldtype)) {
                 currentTab = {
                     label: field.label || 'Details',
                     fieldname: field.fieldname,
                     sections: []
                 };
-                this.structure.tabs.push(currentTab);
+                this.virtualOrder.tabs.push(currentTab);
                 currentSection = null;
                 currentColumn = null;
             }
-            // Also detect implicit tabs from field.parent_tab property
-            else if (field.parent_tab && (!currentTab || currentTab.label !== field.parent_tab)) {
-                currentTab = {
-                    label: field.parent_tab,
-                    fieldname: '_tab_' + field.parent_tab.toLowerCase().replace(/\s+/g, '_'),
-                    sections: []
-                };
-                this.structure.tabs.push(currentTab);
-                currentSection = null;
-                currentColumn = null;
-            }
-            
             // Section Break - start new section
             else if (this.fieldTypes.isSectionBreak(field.fieldtype)) {
-                // If no tab yet, create default tab
+                // Ensure we have a tab
                 if (!currentTab) {
                     currentTab = {
                         label: 'Details',
                         fieldname: '_default_tab',
                         sections: []
                     };
-                    this.structure.tabs.push(currentTab);
+                    this.virtualOrder.tabs.push(currentTab);
                 }
                 
                 currentSection = {
-                    label: field.label || '',
                     fieldname: field.fieldname,
-                    collapsible: field.collapsible || 0,
                     columns: []
                 };
                 currentTab.sections.push(currentSection);
                 
-                // Start first column
+                // Start first column (no Column Break)
                 currentColumn = {
-                    fields: []
+                    fieldnames: [] // Store only fieldnames
                 };
                 currentSection.columns.push(currentColumn);
             }
-            
             // Column Break - start new column
             else if (this.fieldTypes.isColumnBreak(field.fieldtype)) {
-                // If no section yet, create default section
                 if (!currentSection) {
+                    // Create default section if needed
                     if (!currentTab) {
                         currentTab = {
                             label: 'Details',
                             fieldname: '_default_tab',
                             sections: []
                         };
-                        this.structure.tabs.push(currentTab);
+                        this.virtualOrder.tabs.push(currentTab);
                     }
                     currentSection = {
-                        label: '',
                         fieldname: '_default_section',
-                        collapsible: 0,
                         columns: []
                     };
                     currentTab.sections.push(currentSection);
                 }
                 
                 currentColumn = {
-                    fields: [],
                     columnBreakFieldname: field.fieldname,
-                    width: field.columns || 'auto' // Width in 12-column grid
+                    fieldnames: []
                 };
                 currentSection.columns.push(currentColumn);
             }
-            
-            // Regular field - add to current column
+            // Regular field - add fieldname to current column
             else {
                 // Ensure we have tab, section, and column
                 if (!currentTab) {
@@ -161,14 +168,12 @@ class LayoutEditorDataManager {
                         fieldname: '_default_tab',
                         sections: []
                     };
-                    this.structure.tabs.push(currentTab);
+                    this.virtualOrder.tabs.push(currentTab);
                 }
                 
                 if (!currentSection) {
                     currentSection = {
-                        label: '',
                         fieldname: '_default_section',
-                        collapsible: 0,
                         columns: []
                     };
                     currentTab.sections.push(currentSection);
@@ -176,20 +181,83 @@ class LayoutEditorDataManager {
                 
                 if (!currentColumn) {
                     currentColumn = {
-                        fields: []
+                        fieldnames: []
                     };
                     currentSection.columns.push(currentColumn);
                 }
                 
-                // Add field to current column
-                currentColumn.fields.push(field);
+                // Add only the fieldname reference
+                currentColumn.fieldnames.push(field.fieldname);
             }
         });
+    }
+    
+    /**
+     * Build structure from virtualOrder + shadowJSON
+     * This creates the full structure needed for rendering
+     */
+    buildStructure() {
+        this.structure = {
+            tabs: [],
+            currentTab: this.virtualOrder.currentTab || 0
+        };
         
-        // Set first tab as current
-        if (this.structure.tabs.length > 0) {
-            this.structure.currentTab = 0;
-        }
+        this.virtualOrder.tabs.forEach(vTab => {
+            const tab = {
+                label: vTab.label,
+                fieldname: vTab.fieldname,
+                sections: []
+            };
+            
+            vTab.sections.forEach(vSection => {
+                // Get section field data from shadowJSON
+                const sectionField = this.getFieldFromShadow(vSection.fieldname);
+                
+                const section = {
+                    label: sectionField ? sectionField.label || '' : '',
+                    fieldname: vSection.fieldname,
+                    collapsible: sectionField ? sectionField.collapsible || 0 : 0,
+                    columns: []
+                };
+                
+                vSection.columns.forEach(vColumn => {
+                    const column = {
+                        fields: [],
+                        columnBreakFieldname: vColumn.columnBreakFieldname || null,
+                        width: 'auto'
+                    };
+                    
+                    // Get width from Column Break field if exists
+                    if (vColumn.columnBreakFieldname) {
+                        const cbField = this.getFieldFromShadow(vColumn.columnBreakFieldname);
+                        if (cbField) {
+                            column.width = cbField.columns || 'auto';
+                        }
+                    }
+                    
+                    // Get full field objects for rendering
+                    vColumn.fieldnames.forEach(fieldname => {
+                        const field = this.getFieldFromShadow(fieldname);
+                        if (field) {
+                            column.fields.push(field);
+                        }
+                    });
+                    
+                    section.columns.push(column);
+                });
+                
+                tab.sections.push(section);
+            });
+            
+            this.structure.tabs.push(tab);
+        });
+    }
+    
+    /**
+     * Get field from shadowJSON by fieldname
+     */
+    getFieldFromShadow(fieldname) {
+        return this.shadowJSON.find(f => f.fieldname === fieldname);
     }
     
     /**
@@ -219,23 +287,24 @@ class LayoutEditorDataManager {
     setCurrentTab(index) {
         if (index >= 0 && index < this.structure.tabs.length) {
             this.structure.currentTab = index;
+            this.virtualOrder.currentTab = index;
             return true;
         }
         return false;
     }
     
     /**
-     * Get field by fieldname
+     * Get field by fieldname (from shadowJSON)
      */
     getField(fieldname) {
-        return this.rawFields.find(f => f.fieldname === fieldname);
+        return this.getFieldFromShadow(fieldname);
     }
     
     /**
-     * Get all fields
+     * Get all fields (from shadowJSON)
      */
     getAllFields() {
-        return this.rawFields;
+        return this.shadowJSON;
     }
     
     /**
@@ -243,7 +312,7 @@ class LayoutEditorDataManager {
      */
     getStats() {
         const stats = {
-            totalFields: this.rawFields.length,
+            totalFields: this.shadowJSON.length,
             tabs: this.structure.tabs.length,
             sections: 0,
             dataFields: 0,
@@ -254,7 +323,7 @@ class LayoutEditorDataManager {
             stats.sections += tab.sections.length;
         });
         
-        this.rawFields.forEach(field => {
+        this.shadowJSON.forEach(field => {
             if (this.fieldTypes.isBreak(field.fieldtype)) {
                 stats.breaks++;
             } else if (this.fieldTypes.isDataField(field.fieldtype)) {
@@ -266,11 +335,11 @@ class LayoutEditorDataManager {
     }
     
     /**
-     * Update a field property
+     * Update a field property (in shadowJSON)
      */
     updateFieldProperty(fieldname, property, value) {
-        // Find the field
-        const field = this.getField(fieldname);
+        // Find the field in shadowJSON
+        const field = this.getFieldFromShadow(fieldname);
         if (!field) {
             console.error('Field not found:', fieldname);
             return false;
@@ -281,7 +350,7 @@ class LayoutEditorDataManager {
             value = value ? 1 : 0;
         }
         
-        // Update the field
+        // Update the field in shadowJSON
         field[property] = value;
         
         // Track the change
@@ -291,6 +360,9 @@ class LayoutEditorDataManager {
         this.changes[fieldname][property] = value;
         
         this.hasUnsavedChanges = true;
+        
+        // Rebuild structure to reflect changes
+        this.buildStructure();
         
         // Trigger callback
         if (this.onChangeCallback) {
@@ -314,13 +386,14 @@ class LayoutEditorDataManager {
     clearChanges() {
         this.changes = {};
         this.hasUnsavedChanges = false;
+        this.hasOrderChanges = false;
     }
     
     /**
      * Check if there are unsaved changes
      */
     hasChanges() {
-        return this.hasUnsavedChanges;
+        return this.hasUnsavedChanges || this.hasOrderChanges;
     }
     
     /**
@@ -331,20 +404,133 @@ class LayoutEditorDataManager {
     }
     
     /**
-     * Get updated fields JSON for saving
+     * Revert all changes - reset shadowJSON and virtualOrder to original rawFields
      */
-    getUpdatedFieldsJSON() {
-        return JSON.stringify(this.rawFields, null, 2);
+    revertChanges() {
+        // Reset shadowJSON to original
+        this.shadowJSON = JSON.parse(JSON.stringify(this.rawFields));
+        
+        // Rebuild virtualOrder from original
+        this.buildVirtualOrder();
+        
+        // Rebuild structure
+        this.buildStructure();
+        
+        // Clear change tracking
+        this.changes = {};
+        this.hasUnsavedChanges = false;
+        this.hasOrderChanges = false;
+        
+        console.log('Reverted all changes to original loaded state');
+        
+        // Trigger callback
+        if (this.onChangeCallback) {
+            this.onChangeCallback('_revert', 'all', 'reverted');
+        }
+        
+        return true;
     }
     
     /**
+     * Apply virtual order to shadowJSON (for preview/save)
+     * Reorders shadowJSON fields to match virtualOrder
+     */
+    applyVirtualOrder() {
+        const reorderedFields = [];
+        
+        this.virtualOrder.tabs.forEach(tab => {
+            // Add Tab Break field if explicit
+            if (tab.fieldname && !tab.fieldname.startsWith('_')) {
+                const tabField = this.getFieldFromShadow(tab.fieldname);
+                if (tabField) {
+                    reorderedFields.push(tabField);
+                }
+            }
+            
+            tab.sections.forEach(section => {
+                // Add Section Break field
+                if (section.fieldname && !section.fieldname.startsWith('_')) {
+                    const sectionField = this.getFieldFromShadow(section.fieldname);
+                    if (sectionField) {
+                        reorderedFields.push(sectionField);
+                    }
+                }
+                
+                section.columns.forEach((column, colIdx) => {
+                    // Add Column Break field (for columns 2+)
+                    if (colIdx > 0 && column.columnBreakFieldname) {
+                        const cbField = this.getFieldFromShadow(column.columnBreakFieldname);
+                        if (cbField) {
+                            reorderedFields.push(cbField);
+                        }
+                    }
+                    
+                    // Add data fields in column
+                    column.fieldnames.forEach(fieldname => {
+                        const field = this.getFieldFromShadow(fieldname);
+                        if (field) {
+                            reorderedFields.push(field);
+                        }
+                    });
+                });
+            });
+        });
+        
+        // Update shadowJSON with reordered fields
+        this.shadowJSON = reorderedFields;
+        
+        // Track idx changes by comparing with rawFields order
+        this.trackIdxChanges();
+        
+        console.log('Applied virtual order to shadowJSON');
+        return true;
+    }
+    
+    /**
+     * Track idx changes by comparing shadowJSON order with rawFields order
+     */
+    trackIdxChanges() {
+        // Create a map of fieldname -> original idx
+        const originalIdxMap = {};
+        this.rawFields.forEach((field, idx) => {
+            originalIdxMap[field.fieldname] = idx;
+        });
+        
+        // Check each field in shadowJSON for position changes
+        this.shadowJSON.forEach((field, newIdx) => {
+            const originalIdx = originalIdxMap[field.fieldname];
+            
+            if (originalIdx !== undefined && originalIdx !== newIdx) {
+                // Position changed - track it
+                if (!this.changes[field.fieldname]) {
+                    this.changes[field.fieldname] = {};
+                }
+                this.changes[field.fieldname].idx = newIdx;
+            }
+        });
+    }
+    
+    /**
+     * Get updated fields JSON for saving (from shadowJSON with virtual order applied)
+     */
+    getUpdatedFieldsJSON() {
+        // Apply virtual order before generating JSON
+        this.applyVirtualOrder();
+        return JSON.stringify(this.shadowJSON, null, 2);
+    }
+    
+    // =============================================
+    // SECTION REORDERING (updates virtualOrder only)
+    // =============================================
+    
+    /**
      * Move a section within the current tab
-     * @param {number} fromIndex - Current section index in tab
-     * @param {number} toIndex - Target section index in tab
-     * @returns {boolean} Success
+     * Updates virtualOrder only - doesn't touch shadowJSON
      */
     moveSectionInCurrentTab(fromIndex, toIndex) {
-        const currentTab = this.structure.tabs[this.structure.currentTab];
+        const currentTabIdx = this.virtualOrder.currentTab || 0;
+        const currentTab = this.virtualOrder.tabs[currentTabIdx];
+        
         if (!currentTab || !currentTab.sections) {
             console.error('No current tab or sections');
             return false;
@@ -360,175 +546,37 @@ class LayoutEditorDataManager {
             return false;
         }
         
-        // Get the section being moved
-        const movingSection = sections[fromIndex];
+        // Perform the move in virtualOrder
+        const [movingSection] = sections.splice(fromIndex, 1);
+        sections.splice(toIndex, 0, movingSection);
         
-        // Find the raw field indices for the sections
-        const sectionRanges = this.getSectionFieldRanges(currentTab);
+        // Mark as having order changes
+        this.hasOrderChanges = true;
         
-        if (!sectionRanges[fromIndex] || !sectionRanges[toIndex]) {
-            console.error('Could not determine section field ranges');
-            return false;
-        }
-        
-        // Extract the fields for the moving section
-        const movingRange = sectionRanges[fromIndex];
-        const movingFields = this.rawFields.splice(movingRange.start, movingRange.count);
-        
-        // Recalculate ranges after extraction
-        const updatedRanges = this.getSectionFieldRanges(currentTab);
-        
-        // Find new insertion point
-        let insertIndex;
-        if (toIndex === 0) {
-            // Moving to first position - insert at start of tab's fields
-            insertIndex = this.getTabStartIndex(currentTab);
-        } else if (fromIndex < toIndex) {
-            // Moving down - insert after the target section
-            const targetRange = updatedRanges[toIndex - 1]; // -1 because we removed one
-            insertIndex = targetRange ? targetRange.start + targetRange.count : this.rawFields.length;
-        } else {
-            // Moving up - insert before the target section
-            const targetRange = updatedRanges[toIndex];
-            insertIndex = targetRange ? targetRange.start : 0;
-        }
-        
-        // Insert the fields at new position
-        this.rawFields.splice(insertIndex, 0, ...movingFields);
-        
-        // Rebuild structure
+        // Rebuild structure for rendering
         this.buildStructure();
-        
-        // Mark as changed - track idx changes for all affected fields
-        this.trackSectionReorder();
-        
-        console.log(`Section moved from ${fromIndex} to ${toIndex}`);
-        return true;
-    }
-    
-    /**
-     * Get the field index ranges for each section in a tab
-     * Returns array of { start, count, sectionFieldname }
-     */
-    getSectionFieldRanges(tab) {
-        const ranges = [];
-        
-        if (!tab.sections) return ranges;
-        
-        tab.sections.forEach(section => {
-            const sectionFieldname = section.fieldname;
-            
-            // Find the section break field index
-            const sectionIdx = this.rawFields.findIndex(f => f.fieldname === sectionFieldname);
-            
-            if (sectionIdx === -1) {
-                // Default/implicit section - find first field
-                if (section.columns && section.columns[0] && section.columns[0].fields[0]) {
-                    const firstField = section.columns[0].fields[0];
-                    const firstIdx = this.rawFields.findIndex(f => f.fieldname === firstField.fieldname);
-                    ranges.push({
-                        start: firstIdx,
-                        count: this.countSectionFields(section),
-                        sectionFieldname: sectionFieldname
-                    });
-                }
-                return;
-            }
-            
-            // Count fields in this section (section break + columns + fields)
-            const fieldCount = this.countSectionFields(section) + 1; // +1 for section break itself
-            
-            ranges.push({
-                start: sectionIdx,
-                count: fieldCount,
-                sectionFieldname: sectionFieldname
-            });
-        });
-        
-        return ranges;
-    }
-    
-    /**
-     * Count total fields in a section (columns + fields, not the section break itself)
-     */
-    countSectionFields(section) {
-        let count = 0;
-        
-        if (section.columns) {
-            section.columns.forEach((column, colIdx) => {
-                // Add column break (except for first column)
-                if (colIdx > 0) count++;
-                
-                // Add fields in column
-                if (column.fields) {
-                    count += column.fields.length;
-                }
-            });
-        }
-        
-        return count;
-    }
-    
-    /**
-     * Get the starting raw field index for a tab
-     */
-    getTabStartIndex(tab) {
-        if (tab.fieldname && !tab.fieldname.startsWith('_')) {
-            // Explicit tab break - find it
-            const idx = this.rawFields.findIndex(f => f.fieldname === tab.fieldname);
-            if (idx !== -1) return idx + 1; // After the tab break
-        }
-        
-        // Default tab - start at beginning
-        return 0;
-    }
-    
-    /**
-     * Track section reorder as idx changes
-     */
-    trackSectionReorder() {
-        // After reordering, all field positions may have changed
-        // We need to track idx changes for Property Setters
-        this.rawFields.forEach((field, newIdx) => {
-            const originalIdx = field._idx;
-            
-            if (originalIdx !== undefined && originalIdx !== newIdx) {
-                // idx changed - track it
-                if (!this.changes[field.fieldname]) {
-                    this.changes[field.fieldname] = {};
-                }
-                this.changes[field.fieldname].idx = newIdx;
-                
-                // Update the stored idx
-                field._idx = newIdx;
-            }
-        });
-        
-        this.hasUnsavedChanges = true;
         
         // Trigger callback
         if (this.onChangeCallback) {
-            this.onChangeCallback('_reorder', 'idx', 'multiple');
+            this.onChangeCallback('_reorder', 'section', `${fromIndex} -> ${toIndex}`);
         }
+        
+        console.log(`Section moved in virtualOrder: ${fromIndex} -> ${toIndex}`);
+        return true;
     }
+    
+    // =============================================
+    // COLUMN REORDERING (updates virtualOrder only)
+    // =============================================
     
     /**
      * Move a column within a section
-     * Special handling: Column 1 is always "auto", columns moved to position 1 lose their width
-     * @param {string} sectionFieldname - The section containing the columns
-     * @param {number} fromIndex - Current column index
-     * @param {number} toIndex - Target column index
-     * @returns {boolean} Success
+     * Updates virtualOrder only - doesn't touch shadowJSON
      */
     moveColumnInSection(sectionFieldname, fromIndex, toIndex) {
-        // Find the section in current tab
-        const currentTab = this.structure.tabs[this.structure.currentTab];
-        if (!currentTab || !currentTab.sections) {
-            console.error('No current tab or sections');
-            return false;
-        }
+        // Find the section in virtualOrder
+        const section = this.findSectionInVirtualOrder(sectionFieldname);
         
-        const section = currentTab.sections.find(s => s.fieldname === sectionFieldname);
         if (!section || !section.columns) {
             console.error('Section not found:', sectionFieldname);
             return false;
@@ -544,229 +592,188 @@ class LayoutEditorDataManager {
             return false;
         }
         
-        // Get the column ranges in rawFields BEFORE any modification
-        const columnRanges = this.getColumnFieldRanges(sectionFieldname);
-        console.log('Column ranges:', columnRanges);
+        // Handle Column Break shuffling
+        // When we move columns, we need to handle the Column Break fields specially:
+        // - Column 0 never has a Column Break
+        // - Columns 1+ always have a Column Break
         
-        if (!columnRanges[fromIndex]) {
-            console.error('Could not determine column field range for index:', fromIndex);
-            return false;
-        }
-        
-        // Get width info before moving
         const movingColumn = columns[fromIndex];
-        const movingColumnWidth = (fromIndex > 0 && movingColumn.columnBreakFieldname) 
-            ? (parseInt(movingColumn.width) || 0) 
-            : 0;
+        const targetColumn = columns[toIndex];
         
-        // Special case: Moving TO position 0 from position > 0
-        // The moving column has a Column Break that should NOT move with it
-        // Instead, it stays to mark the new position of the old Col 0 fields
-        if (toIndex === 0 && fromIndex > 0) {
-            return this.moveColumnToFirstPosition(sectionFieldname, fromIndex, columnRanges);
-        }
+        // Extract the moving column
+        const [extracted] = columns.splice(fromIndex, 1);
         
-        // Special case: Moving FROM position 0 to position > 0
-        // Need to insert a Column Break before the moving fields
-        if (fromIndex === 0 && toIndex > 0) {
-            return this.moveColumnFromFirstPosition(sectionFieldname, toIndex, columnRanges);
-        }
+        // Insert at new position
+        columns.splice(toIndex, 0, extracted);
         
-        // Normal case: moving between positions > 0
-        const movingRange = columnRanges[fromIndex];
-        const movingFields = this.rawFields.splice(movingRange.start, movingRange.count);
-        console.log('Extracted fields:', movingFields.map(f => f.fieldname));
+        // Now fix up Column Break assignments:
+        // After the move, we need to ensure:
+        // - columns[0] has NO columnBreakFieldname
+        // - columns[1+] each have a columnBreakFieldname
         
-        // Recalculate ranges after extraction
-        const updatedRanges = this.getColumnFieldRanges(sectionFieldname);
+        this.fixColumnBreakAssignments(columns);
         
-        // Calculate insertion point
-        let insertIndex;
-        if (fromIndex < toIndex) {
-            // Moving right - insert after the target column
-            const adjustedToIndex = toIndex - 1;
-            if (updatedRanges[adjustedToIndex]) {
-                insertIndex = updatedRanges[adjustedToIndex].start + updatedRanges[adjustedToIndex].count;
-            } else {
-                insertIndex = this.rawFields.length;
-            }
-        } else {
-            // Moving left - insert before the target column  
-            if (updatedRanges[toIndex]) {
-                insertIndex = updatedRanges[toIndex].start;
-            } else {
-                insertIndex = 0;
-            }
-        }
+        // Mark as having order changes
+        this.hasOrderChanges = true;
         
-        console.log('Inserting at index:', insertIndex);
-        
-        // Insert the fields at new position
-        this.rawFields.splice(insertIndex, 0, ...movingFields);
-        
-        // Rebuild structure from updated rawFields
+        // Rebuild structure for rendering
         this.buildStructure();
         
-        // Track changes for idx
-        this.trackSectionReorder();
+        // Trigger callback
+        if (this.onChangeCallback) {
+            this.onChangeCallback('_reorder', 'column', `${fromIndex} -> ${toIndex}`);
+        }
         
-        console.log(`Column moved from ${fromIndex} to ${toIndex} in section ${sectionFieldname}`);
+        console.log(`Column moved in virtualOrder: ${fromIndex} -> ${toIndex} in section ${sectionFieldname}`);
         return true;
     }
     
     /**
-     * Move a column TO position 0 (first column)
-     * The Column Break stays to mark the new Col 1 (old Col 0 fields)
+     * Fix Column Break assignments after a column move
+     * Ensures column 0 has no break, and columns 1+ each have one
      */
-    moveColumnToFirstPosition(sectionFieldname, fromIndex, columnRanges) {
-        console.log(`Moving column ${fromIndex} to position 0`);
-        
-        const movingRange = columnRanges[fromIndex];
-        
-        // Get the fields - but SKIP the Column Break (first field if fromIndex > 0)
-        const allMovingFields = this.rawFields.slice(movingRange.start, movingRange.start + movingRange.count);
-        
-        // Separate Column Break from data fields
-        const columnBreak = allMovingFields.find(f => f.fieldtype === 'Column Break');
-        const dataFields = allMovingFields.filter(f => f.fieldtype !== 'Column Break');
-        
-        console.log('Column Break:', columnBreak?.fieldname);
-        console.log('Data fields:', dataFields.map(f => f.fieldname));
-        
-        if (dataFields.length === 0) {
-            console.error('No data fields to move');
-            return false;
-        }
-        
-        // Remove ONLY the data fields (leave Column Break in place)
-        // First, find their indices
-        const dataFieldIndices = [];
-        for (let i = movingRange.start; i < movingRange.start + movingRange.count; i++) {
-            if (this.rawFields[i].fieldtype !== 'Column Break') {
-                dataFieldIndices.push(i);
+    fixColumnBreakAssignments(columns) {
+        // Collect all Column Break fieldnames from all columns
+        const allColumnBreaks = [];
+        columns.forEach(col => {
+            if (col.columnBreakFieldname) {
+                allColumnBreaks.push(col.columnBreakFieldname);
             }
-        }
-        
-        // Remove data fields from highest index to lowest (to preserve indices)
-        for (let i = dataFieldIndices.length - 1; i >= 0; i--) {
-            this.rawFields.splice(dataFieldIndices[i], 1);
-        }
-        
-        // Insert data fields at position 0 (right after Section Break)
-        const sectionIdx = this.rawFields.findIndex(f => f.fieldname === sectionFieldname);
-        const insertIndex = sectionIdx + 1;
-        
-        this.rawFields.splice(insertIndex, 0, ...dataFields);
-        
-        console.log('Moved data fields to position 0');
-        
-        // Rebuild and track changes
-        this.buildStructure();
-        this.trackSectionReorder();
-        
-        return true;
-    }
-    
-    /**
-     * Move a column FROM position 0 to another position
-     * Need to add a Column Break before the moving fields
-     */
-    moveColumnFromFirstPosition(sectionFieldname, toIndex, columnRanges) {
-        console.log(`Moving column 0 to position ${toIndex}`);
-        
-        const movingRange = columnRanges[0]; // Position 0
-        
-        // Get the fields from position 0 (no Column Break here)
-        const dataFields = this.rawFields.slice(movingRange.start, movingRange.start + movingRange.count);
-        console.log('Data fields from Col 0:', dataFields.map(f => f.fieldname));
-        
-        // Remove these fields
-        this.rawFields.splice(movingRange.start, movingRange.count);
-        
-        // Find the target Column Break (which will now become position 0's boundary)
-        const updatedRanges = this.getColumnFieldRanges(sectionFieldname);
-        
-        // Get the Column Break that was at toIndex (now at toIndex-1 after removal)
-        // This Column Break will "absorb" the old position 0 fields
-        const targetRange = updatedRanges[toIndex - 1];
-        
-        if (targetRange) {
-            // Insert after this column's fields
-            const insertIndex = targetRange.start + targetRange.count;
-            
-            // We need to add a Column Break before our data fields
-            // Create a synthetic Column Break entry
-            const newColumnBreak = {
-                fieldtype: 'Column Break',
-                fieldname: `column_break_moved_${Date.now()}`,
-                label: ''
-            };
-            
-            this.rawFields.splice(insertIndex, 0, newColumnBreak, ...dataFields);
-            console.log('Inserted Column Break and data fields at position', insertIndex);
-        }
-        
-        // Rebuild and track changes
-        this.buildStructure();
-        this.trackSectionReorder();
-        
-        return true;
-    }
-    
-    /**
-     * Get field ranges for each column in a section
-     * Returns array of { start, count } for each column
-     */
-    getColumnFieldRanges(sectionFieldname) {
-        const ranges = [];
-        
-        // Find section start
-        const sectionIdx = this.rawFields.findIndex(f => f.fieldname === sectionFieldname);
-        if (sectionIdx === -1) {
-            console.error('Section not found:', sectionFieldname);
-            return ranges;
-        }
-        
-        const startIdx = sectionIdx + 1; // Start after Section Break
-        
-        // Find section end (next Section Break or Tab Break or end of array)
-        let sectionEndIdx = this.rawFields.length;
-        for (let i = startIdx; i < this.rawFields.length; i++) {
-            const field = this.rawFields[i];
-            if (field.fieldtype === 'Section Break' || field.fieldtype === 'Tab Break') {
-                sectionEndIdx = i;
-                break;
-            }
-        }
-        
-        // Parse columns - first column starts right after Section Break
-        let currentColumnStart = startIdx;
-        
-        for (let i = startIdx; i < sectionEndIdx; i++) {
-            const field = this.rawFields[i];
-            
-            if (field.fieldtype === 'Column Break') {
-                // End of previous column
-                ranges.push({
-                    start: currentColumnStart,
-                    count: i - currentColumnStart
-                });
-                // New column starts at this Column Break
-                currentColumnStart = i;
-            }
-        }
-        
-        // Add last column (from last Column Break or section start to section end)
-        ranges.push({
-            start: currentColumnStart,
-            count: sectionEndIdx - currentColumnStart
         });
         
+        // Now reassign:
+        // - Column 0: no break
+        // - Columns 1+: assign breaks in order
+        
+        columns.forEach((col, idx) => {
+            if (idx === 0) {
+                // First column - no Column Break
+                delete col.columnBreakFieldname;
+            } else {
+                // Columns 1+ need a Column Break
+                if (allColumnBreaks.length > 0) {
+                    col.columnBreakFieldname = allColumnBreaks.shift();
+                }
+            }
+        });
+        
+        // If we have leftover Column Breaks, log a warning
+        if (allColumnBreaks.length > 0) {
+            console.warn('Leftover Column Breaks after reassignment:', allColumnBreaks);
+        }
+    }
+    
+    /**
+     * Find a section in virtualOrder by fieldname
+     */
+    findSectionInVirtualOrder(sectionFieldname) {
+        for (const tab of this.virtualOrder.tabs) {
+            if (tab.sections) {
+                const section = tab.sections.find(s => s.fieldname === sectionFieldname);
+                if (section) {
+                    return section;
+                }
+            }
+        }
+        return null;
+    }
+    
+    // =============================================
+    // FIELD REORDERING (future - updates virtualOrder only)
+    // =============================================
+    
+    /**
+     * Move a field within a column
+     * Updates virtualOrder only
+     */
+    moveFieldInColumn(sectionFieldname, columnIndex, fromFieldIndex, toFieldIndex) {
+        const section = this.findSectionInVirtualOrder(sectionFieldname);
+        
+        if (!section || !section.columns || !section.columns[columnIndex]) {
+            console.error('Column not found');
+            return false;
+        }
+        
+        const fieldnames = section.columns[columnIndex].fieldnames;
+        
+        // Validate indices
+        if (fromFieldIndex < 0 || fromFieldIndex >= fieldnames.length ||
+            toFieldIndex < 0 || toFieldIndex >= fieldnames.length ||
+            fromFieldIndex === toFieldIndex) {
+            return false;
+        }
+        
+        // Perform the move
+        const [moving] = fieldnames.splice(fromFieldIndex, 1);
+        fieldnames.splice(toFieldIndex, 0, moving);
+        
+        this.hasOrderChanges = true;
+        this.buildStructure();
+        
+        if (this.onChangeCallback) {
+            this.onChangeCallback('_reorder', 'field', `${fromFieldIndex} -> ${toFieldIndex}`);
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Move a field between columns
+     * Updates virtualOrder only
+     */
+    moveFieldToColumn(sectionFieldname, fromColumnIndex, fieldIndex, toColumnIndex, toFieldIndex) {
+        const section = this.findSectionInVirtualOrder(sectionFieldname);
+        
+        if (!section || !section.columns) {
+            return false;
+        }
+        
+        const fromColumn = section.columns[fromColumnIndex];
+        const toColumn = section.columns[toColumnIndex];
+        
+        if (!fromColumn || !toColumn) {
+            return false;
+        }
+        
+        // Extract field from source column
+        const [fieldname] = fromColumn.fieldnames.splice(fieldIndex, 1);
+        
+        // Insert into target column
+        toColumn.fieldnames.splice(toFieldIndex, 0, fieldname);
+        
+        this.hasOrderChanges = true;
+        this.buildStructure();
+        
+        if (this.onChangeCallback) {
+            this.onChangeCallback('_reorder', 'field_move', `col${fromColumnIndex} -> col${toColumnIndex}`);
+        }
+        
+        return true;
+    }
+    
+    // =============================================
+    // LEGACY METHODS (for compatibility)
+    // =============================================
+    
+    /**
+     * Get section field ranges (legacy - kept for compatibility)
+     */
+    getSectionFieldRanges(tab) {
+        // This is now mostly unused, but kept for any legacy code
+        const ranges = [];
+        // ... implementation would go here if needed
         return ranges;
+    }
+    
+    /**
+     * Get column field ranges (legacy)
+     */
+    getColumnFieldRanges(sectionFieldname) {
+        // Also mostly unused now
+        return [];
     }
 }
 
 
 // Export as global
 window.LayoutEditorDataManager = LayoutEditorDataManager;
-
