@@ -18,6 +18,11 @@ let layoutEditorWidget = null;
 
 frappe.ui.form.on("Layout Editor", {
     refresh: function(frm) {
+        // Add Back button
+        frm.add_custom_button(__('← Back'), function() {
+            window.history.back();
+        });
+        
         // Hide Frappe's standard Save button (not needed - this is a tool, not a data form)
         frm.disable_save();
         
@@ -439,6 +444,11 @@ function initialize_visual_editor(frm) {
     });
 }
 
-
-
-
+// Add Back button to list view
+frappe.listview_settings['Layout Editor'] = {
+    onload: function(listview) {
+        listview.page.add_inner_button(__('← Back'), function() {
+            window.history.back();
+        });
+    }
+};

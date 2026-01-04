@@ -6,6 +6,11 @@
 
 frappe.ui.form.on('WP Sync Task', {
     refresh: function(frm) {
+        // Add Back button
+        frm.add_custom_button(__('← Back'), function() {
+            window.history.back();
+        });
+        
         // Add NCE theme class to body for CSS targeting
         $('body').addClass('nce-wp-sync-form');
         
@@ -329,6 +334,11 @@ frappe.ui.form.on('WP Sync Task', {
 // Add bulk action to list view
 frappe.listview_settings['WP Sync Task'] = {
     onload: function(listview) {
+        // Add Back button
+        listview.page.add_inner_button(__('← Back'), function() {
+            window.history.back();
+        });
+        
         listview.page.add_action_item(__('Run Selected Tasks'), function() {
             let selected = listview.get_checked_items();
             if (selected.length === 0) {
