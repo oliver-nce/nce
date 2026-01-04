@@ -145,7 +145,9 @@ class LayoutEditorDataManager {
                 }
                 
                 currentColumn = {
-                    fields: []
+                    fields: [],
+                    columnBreakFieldname: field.fieldname,
+                    width: field.columns || 'auto' // Width in 12-column grid
                 };
                 currentSection.columns.push(currentColumn);
             }

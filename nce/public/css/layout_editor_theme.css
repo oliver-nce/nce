@@ -569,6 +569,122 @@
     font-style: italic;
 }
 
+/* Column Header (clickable) */
+.le-column-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 10px;
+    background: var(--le-bg-citron-ultra-light);
+    border-bottom: 1px solid var(--le-color-gray-medium);
+    font-size: 11px;
+    color: var(--le-color-gray-dark);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 4px 4px 0 0;
+    margin: -12px -12px 10px -12px;
+}
+
+.le-column-header:hover {
+    background: var(--le-bg-citron-light);
+}
+
+.le-column.selected .le-column-header {
+    background: var(--le-brand-primary);
+    color: var(--le-brand-secondary);
+}
+
+.le-column.selected {
+    border: 2px solid var(--le-brand-primary);
+    box-shadow: 0 0 0 3px var(--le-selected-glow);
+}
+
+.le-column-label {
+    font-weight: var(--le-font-weight-medium);
+}
+
+.le-column-width-display {
+    font-size: 10px;
+    opacity: 0.7;
+    padding: 2px 6px;
+    background: rgba(0,0,0,0.1);
+    border-radius: 3px;
+}
+
+/* Inline width selector dropdown */
+.le-column-width-select {
+    font-size: 11px;
+    padding: 2px 4px;
+    border: 1px solid var(--le-color-gray-medium);
+    border-radius: 3px;
+    background: var(--le-color-white);
+    cursor: pointer;
+    min-width: 50px;
+    font-weight: var(--le-font-weight-medium);
+}
+
+.le-column-width-select:hover {
+    border-color: var(--le-brand-primary);
+}
+
+.le-column-width-select:focus {
+    outline: none;
+    border-color: var(--le-brand-primary);
+    box-shadow: 0 0 0 2px var(--le-selected-glow);
+}
+
+.le-column.selected .le-column-width-select {
+    border-color: var(--le-brand-secondary);
+}
+
+.le-column-fields {
+    /* Container for fields within column */
+}
+
+/* Width visual indicator in properties panel */
+.le-width-grid {
+    display: flex;
+    gap: 2px;
+    margin: 10px 0;
+}
+
+.le-width-cell {
+    flex: 1;
+    height: 20px;
+    background: var(--le-color-gray-light);
+    border-radius: 2px;
+    transition: background 0.2s ease;
+}
+
+.le-width-cell.active {
+    background: var(--le-brand-primary);
+}
+
+.le-width-label {
+    text-align: center;
+    font-size: 12px;
+    color: var(--le-color-gray-dark);
+    margin-top: 5px;
+}
+
+/* Info box for column properties */
+.le-info-box {
+    padding: 12px;
+    background: var(--le-bg-citron-ultra-light);
+    border: 1px solid var(--le-color-gray-medium);
+    border-radius: 4px;
+    font-size: 13px;
+    color: var(--le-color-gray-dark);
+}
+
+.le-info-box p {
+    margin: 5px 0;
+}
+
+.le-info-box strong {
+    color: var(--le-brand-secondary);
+}
+
 /* Utility Classes */
 .le-mb-10 { margin-bottom: 10px; }
 .le-mb-15 { margin-bottom: 15px; }

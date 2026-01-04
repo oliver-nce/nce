@@ -8,6 +8,8 @@ class LayoutEditorPropertiesPanel {
         this.container = container;
         this.dataManager = dataManager;
         this.currentField = null;
+        this.currentColumn = null;
+        this.selectionType = null; // 'field', 'column', 'section'
         this.utils = LayoutEditorUtils;
     }
     
@@ -34,10 +36,157 @@ class LayoutEditorPropertiesPanel {
     }
     
     /**
+     * Display column properties
+     */
+    displayColumn(columnData) {
+        this.currentColumn = columnData;
+        this.currentField = columnData.columnBreakField;
+        this.selectionType = 'column';
+        this.utils.clearElement(this.container);
+        
+        // Header
+        const header = this.utils.createElement('div', ['le-properties-header', 'le-mb-15']);
+        const title = this.utils.createElement('h3', [], {}, 'Column Properties');
+        const columnInfo = this.utils.createElement(
+            'div',
+            ['le-field-info'],
+            {},
+            `
+                <div><strong>Column:</strong> ${columnData.columnIndex + 1}</div>
+                <div><strong>Section:</strong> ${this.utils.escapeHtml(columnData.sectionFieldname || 'Default')}</div>
+            `
+        );
+        header.appendChild(title);
+        header.appendChild(columnInfo);
+        this.container.appendChild(header);
+        
+        // Width properties section
+        const widthSection = this.utils.createElement('div', ['le-properties-section', 'le-mb-20']);
+        const sectionTitle = this.utils.createElement(
+            'h4',
+            ['le-properties-section-title'],
+            {},
+            'Column Width (12-column grid)'
+        );
+        widthSection.appendChild(sectionTitle);
+        
+        if (columnData.isFirstColumn) {
+            // First column - explain it takes remaining space
+            const info = this.utils.createElement(
+                'div',
+                ['le-info-box'],
+                {},
+                `<p>📌 <strong>First column</strong> takes the remaining space after other columns.</p>
+                 <p>To control width, adjust the Column Break for columns 2, 3, etc.</p>`
+            );
+            widthSection.appendChild(info);
+        } else if (columnData.columnBreakField) {
+            // Has Column Break - can edit width
+            const currentWidth = columnData.columnBreakField.columns || 0;
+            
+            // Width selector
+            const widthProp = this.utils.createElement('div', ['le-property', 'le-mb-10']);
+            const label = this.utils.createElement('label', ['le-property-label'], {}, 'Width (columns)');
+            widthProp.appendChild(label);
+            
+            const select = this.utils.createElement('select', ['le-select'], {
+                'data-property': 'columns'
+            });
+            
+            // Options: auto, 1-11
+            const options = [
+                { value: '0', label: 'Auto (equal split)' },
+                { value: '1', label: '1 of 12 (8%)' },
+                { value: '2', label: '2 of 12 (17%)' },
+                { value: '3', label: '3 of 12 (25%)' },
+                { value: '4', label: '4 of 12 (33%)' },
+                { value: '5', label: '5 of 12 (42%)' },
+                { value: '6', label: '6 of 12 (50%)' },
+                { value: '7', label: '7 of 12 (58%)' },
+                { value: '8', label: '8 of 12 (67%)' },
+                { value: '9', label: '9 of 12 (75%)' },
+                { value: '10', label: '10 of 12 (83%)' },
+                { value: '11', label: '11 of 12 (92%)' }
+            ];
+            
+            options.forEach(opt => {
+                const option = this.utils.createElement('option', [], { value: opt.value }, opt.label);
+                if (String(currentWidth) === opt.value) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+            
+            select.addEventListener('change', (e) => {
+                this.onColumnWidthChange(parseInt(e.target.value));
+            });
+            
+            widthProp.appendChild(select);
+            widthSection.appendChild(widthProp);
+            
+            // Visual indicator
+            const visualWidth = this.utils.createElement(
+                'div',
+                ['le-width-visual'],
+                {},
+                this.renderWidthVisual(currentWidth || 6)
+            );
+            widthSection.appendChild(visualWidth);
+        } else {
+            // No Column Break field found
+            const info = this.utils.createElement(
+                'div',
+                ['le-info-box'],
+                {},
+                `<p>⚠️ Column Break field not found. Cannot edit width.</p>`
+            );
+            widthSection.appendChild(info);
+        }
+        
+        this.container.appendChild(widthSection);
+    }
+    
+    /**
+     * Render visual width indicator
+     */
+    renderWidthVisual(width) {
+        let html = '<div class="le-width-grid">';
+        for (let i = 1; i <= 12; i++) {
+            const active = i <= width ? 'active' : '';
+            html += `<div class="le-width-cell ${active}"></div>`;
+        }
+        html += '</div>';
+        html += `<div class="le-width-label">${width} of 12 columns</div>`;
+        return html;
+    }
+    
+    /**
+     * Handle column width change
+     */
+    onColumnWidthChange(newWidth) {
+        if (!this.currentColumn || !this.currentColumn.columnBreakField) return;
+        
+        const fieldname = this.currentColumn.columnBreakField.fieldname;
+        
+        // Update in data manager
+        this.dataManager.updateFieldProperty(fieldname, 'columns', newWidth);
+        
+        // Update current reference
+        this.currentColumn.columnBreakField.columns = newWidth;
+        
+        // Re-render to update visual
+        this.displayColumn(this.currentColumn);
+        
+        this.utils.showAlert(`Column width set to ${newWidth || 'auto'}`, 'green');
+    }
+    
+    /**
      * Display field properties
      */
     displayField(field) {
         this.currentField = field;
+        this.currentColumn = null;
+        this.selectionType = 'field';
         this.utils.clearElement(this.container);
         
         // Header

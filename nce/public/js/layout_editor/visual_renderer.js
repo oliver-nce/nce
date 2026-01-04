@@ -10,7 +10,10 @@ class LayoutEditorVisualRenderer {
         this.fieldTypes = new LayoutEditorFieldTypes();
         this.utils = LayoutEditorUtils;
         this.selectedField = null;
+        this.selectedElement = null; // Track selected DOM element
         this.onFieldSelect = null; // Callback when field is selected
+        this.onColumnSelect = null; // Callback when column is selected
+        this.onSectionSelect = null; // Callback when section is selected
         this.dragDropHandler = null; // Set by widget after initialization
     }
     
@@ -117,6 +120,8 @@ class LayoutEditorVisualRenderer {
      */
     renderSection(section, sectionIndex) {
         const sectionContainer = this.utils.createElement('div', ['le-section']);
+        sectionContainer.dataset.sectionIndex = sectionIndex;
+        sectionContainer.dataset.sectionFieldname = section.fieldname;
         
         // Section header
         const header = this.renderSectionHeader(section);
@@ -126,7 +131,7 @@ class LayoutEditorVisualRenderer {
         const body = this.utils.createElement('div', ['le-section-body']);
         
         if (section.columns && section.columns.length > 0) {
-            const columnsContainer = this.renderColumns(section.columns);
+            const columnsContainer = this.renderColumns(section.columns, section.fieldname);
             body.appendChild(columnsContainer);
         }
         
@@ -170,11 +175,11 @@ class LayoutEditorVisualRenderer {
     /**
      * Render columns
      */
-    renderColumns(columns) {
+    renderColumns(columns, sectionFieldname) {
         const columnsContainer = this.utils.createElement('div', ['le-columns']);
         
         columns.forEach((column, index) => {
-            const columnEl = this.renderColumn(column, index);
+            const columnEl = this.renderColumn(column, index, sectionFieldname);
             columnsContainer.appendChild(columnEl);
         });
         
@@ -184,13 +189,97 @@ class LayoutEditorVisualRenderer {
     /**
      * Render single column
      */
-    renderColumn(column, columnIndex) {
+    renderColumn(column, columnIndex, sectionFieldname) {
         const columnEl = this.utils.createElement('div', ['le-column']);
+        columnEl.dataset.columnIndex = columnIndex;
+        columnEl.dataset.sectionFieldname = sectionFieldname;
+        
+        // Column header with inline editable width
+        const columnHeader = this.utils.createElement('div', ['le-column-header']);
+        
+        // Column label
+        const labelSpan = this.utils.createElement(
+            'span',
+            ['le-column-label'],
+            {},
+            `Col ${columnIndex + 1}`
+        );
+        columnHeader.appendChild(labelSpan);
+        
+        // Width selector (inline editable)
+        if (columnIndex === 0) {
+            // First column - show "auto" (takes remaining space)
+            const widthSpan = this.utils.createElement(
+                'span',
+                ['le-column-width-display'],
+                { title: 'First column takes remaining space' },
+                'auto'
+            );
+            columnHeader.appendChild(widthSpan);
+        } else {
+            // Column 2+ - editable width dropdown
+            const widthSelect = this.utils.createElement('select', ['le-column-width-select'], {
+                title: 'Column width (1-12 grid)'
+            });
+            
+            const currentWidth = column.width || 0;
+            const options = [
+                { value: '0', label: 'auto' },
+                { value: '1', label: '1' },
+                { value: '2', label: '2' },
+                { value: '3', label: '3' },
+                { value: '4', label: '4' },
+                { value: '5', label: '5' },
+                { value: '6', label: '6' },
+                { value: '7', label: '7' },
+                { value: '8', label: '8' },
+                { value: '9', label: '9' },
+                { value: '10', label: '10' },
+                { value: '11', label: '11' }
+            ];
+            
+            options.forEach(opt => {
+                const option = document.createElement('option');
+                option.value = opt.value;
+                option.textContent = opt.label;
+                if (String(currentWidth) === opt.value) {
+                    option.selected = true;
+                }
+                widthSelect.appendChild(option);
+            });
+            
+            // Change handler - update immediately
+            widthSelect.addEventListener('change', (e) => {
+                e.stopPropagation();
+                const newWidth = parseInt(e.target.value);
+                this.onColumnWidthChange(column, columnIndex, newWidth, sectionFieldname);
+            });
+            
+            // Prevent click from bubbling to header
+            widthSelect.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+            
+            columnHeader.appendChild(widthSelect);
+        }
+        
+        // Click on header (not dropdown) to select column for more properties
+        columnHeader.addEventListener('click', (e) => {
+            if (e.target.tagName !== 'SELECT') {
+                e.stopPropagation();
+                this.selectColumn(column, columnIndex, columnEl, sectionFieldname);
+            }
+        });
+        
+        columnEl.appendChild(columnHeader);
+        
+        // Column fields container
+        const fieldsContainer = this.utils.createElement('div', ['le-column-fields']);
         
         if (column.fields && column.fields.length > 0) {
             column.fields.forEach(field => {
                 const fieldEl = this.renderField(field);
-                columnEl.appendChild(fieldEl);
+                fieldsContainer.appendChild(fieldEl);
             });
         } else {
             const emptyColumn = this.utils.createElement(
@@ -199,10 +288,122 @@ class LayoutEditorVisualRenderer {
                 {},
                 '<p style="text-align: center; color: #ccc; padding: 10px;">Empty column</p>'
             );
-            columnEl.appendChild(emptyColumn);
+            fieldsContainer.appendChild(emptyColumn);
         }
         
+        columnEl.appendChild(fieldsContainer);
+        
         return columnEl;
+    }
+    
+    /**
+     * Handle column width change from inline dropdown
+     */
+    onColumnWidthChange(column, columnIndex, newWidth, sectionFieldname) {
+        if (!column.columnBreakFieldname) {
+            console.warn('No Column Break field for column', columnIndex);
+            return;
+        }
+        
+        // Validate: check if total would exceed 12
+        const section = this.findSectionByFieldname(sectionFieldname);
+        if (section && newWidth > 0) {
+            const otherColumnsTotal = this.calculateOtherColumnsWidth(section, columnIndex);
+            const newTotal = otherColumnsTotal + newWidth;
+            
+            if (newTotal > 12) {
+                LayoutEditorUtils.showError(
+                    `Cannot set width to ${newWidth}. Other columns use ${otherColumnsTotal}, total would be ${newTotal} (max 12).`,
+                    'Width Exceeds Grid'
+                );
+                // Reset dropdown to previous value
+                this.render();
+                return;
+            }
+        }
+        
+        // Update in data manager
+        this.dataManager.updateFieldProperty(column.columnBreakFieldname, 'columns', newWidth);
+        
+        // Update local reference
+        column.width = newWidth || 'auto';
+        
+        // Show feedback
+        LayoutEditorUtils.showAlert(`Column ${columnIndex + 1} width: ${newWidth || 'auto'}`, 'green');
+    }
+    
+    /**
+     * Find section by fieldname in current tab
+     */
+    findSectionByFieldname(sectionFieldname) {
+        const structure = this.dataManager.getStructure();
+        if (!structure || !structure.tabs) return null;
+        
+        const currentTab = structure.tabs[structure.currentTab];
+        if (!currentTab || !currentTab.sections) return null;
+        
+        return currentTab.sections.find(s => s.fieldname === sectionFieldname);
+    }
+    
+    /**
+     * Calculate total width of other columns (excluding the one being changed)
+     */
+    calculateOtherColumnsWidth(section, excludeColumnIndex) {
+        let total = 0;
+        
+        if (!section.columns) return total;
+        
+        section.columns.forEach((col, idx) => {
+            if (idx !== excludeColumnIndex && idx > 0) {
+                // Only count columns 2+ (column 1 is auto)
+                const width = parseInt(col.width) || 0;
+                if (width > 0) {
+                    total += width;
+                }
+            }
+        });
+        
+        return total;
+    }
+    
+    /**
+     * Select a column
+     */
+    selectColumn(column, columnIndex, columnElement, sectionFieldname) {
+        // Remove previous selection
+        this.clearSelection();
+        
+        // Add selection to this column
+        columnElement.classList.add('selected');
+        this.selectedElement = columnElement;
+        
+        // Find the Column Break field for this column (if not first column)
+        let columnBreakField = null;
+        if (columnIndex > 0 && column.columnBreakFieldname) {
+            columnBreakField = this.dataManager.getField(column.columnBreakFieldname);
+        }
+        
+        // Trigger callback if set
+        if (this.onColumnSelect) {
+            this.onColumnSelect({
+                columnIndex: columnIndex,
+                sectionFieldname: sectionFieldname,
+                columnBreakField: columnBreakField,
+                width: column.width,
+                isFirstColumn: columnIndex === 0
+            });
+        }
+    }
+    
+    /**
+     * Clear any selection (field, column, section)
+     */
+    clearSelection() {
+        if (this.selectedElement) {
+            this.selectedElement.classList.remove('selected');
+        }
+        this.selectedField = null;
+        this.selectedElement = null;
     }
     
     /**
@@ -263,17 +464,13 @@ class LayoutEditorVisualRenderer {
      * Select a field
      */
     selectField(field, fieldElement) {
-        // Remove previous selection
-        if (this.selectedField) {
-            const prevSelected = this.container.querySelector('.le-field.selected');
-            if (prevSelected) {
-                prevSelected.classList.remove('selected');
-            }
-        }
+        // Clear any previous selection
+        this.clearSelection();
         
         // Add selection to this field
         fieldElement.classList.add('selected');
         this.selectedField = field;
+        this.selectedElement = fieldElement;
         
         // Trigger callback if set
         if (this.onFieldSelect) {
@@ -302,6 +499,20 @@ class LayoutEditorVisualRenderer {
      */
     setOnFieldSelect(callback) {
         this.onFieldSelect = callback;
+    }
+    
+    /**
+     * Set column select callback
+     */
+    setOnColumnSelect(callback) {
+        this.onColumnSelect = callback;
+    }
+    
+    /**
+     * Set section select callback
+     */
+    setOnSectionSelect(callback) {
+        this.onSectionSelect = callback;
     }
     
     /**

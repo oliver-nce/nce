@@ -51,6 +51,10 @@ class LayoutEditorWidget {
             this.onFieldSelected(field);
         });
         
+        this.visualRenderer.setOnColumnSelect((columnData) => {
+            this.onColumnSelected(columnData);
+        });
+        
         // Connect drag drop handler to visual renderer
         this.visualRenderer.setDragDropHandler(this.dragDropHandler);
         
@@ -293,6 +297,14 @@ class LayoutEditorWidget {
     onFieldSelected(field) {
         console.log('Field selected:', field.fieldname);
         this.propertiesPanel.displayField(field);
+    }
+    
+    /**
+     * Handle column selection
+     */
+    onColumnSelected(columnData) {
+        console.log('Column selected:', columnData.columnIndex, 'in section:', columnData.sectionFieldname);
+        this.propertiesPanel.displayColumn(columnData);
     }
     
     /**
