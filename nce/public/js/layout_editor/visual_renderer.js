@@ -179,7 +179,7 @@ class LayoutEditorVisualRenderer {
         const columnsContainer = this.utils.createElement('div', ['le-columns']);
         
         columns.forEach((column, index) => {
-            const columnEl = this.renderColumn(column, index, sectionFieldname);
+            const columnEl = this.renderColumn(column, index, sectionFieldname, columns.length, columns);
             columnsContainer.appendChild(columnEl);
         });
         
@@ -187,12 +187,60 @@ class LayoutEditorVisualRenderer {
     }
     
     /**
+     * Calculate visual width percentage for a column
+     * Based on Frappe's 12-column grid
+     */
+    calculateColumnVisualWidth(column, columnIndex, allColumns) {
+        // Calculate total fixed width of all columns (except auto ones)
+        let totalFixedWidth = 0;
+        let autoColumnCount = 0;
+        
+        allColumns.forEach((col, idx) => {
+            if (idx === 0) {
+                // First column is always auto
+                autoColumnCount++;
+            } else {
+                const width = parseInt(col.width) || 0;
+                if (width > 0) {
+                    totalFixedWidth += width;
+                } else {
+                    autoColumnCount++;
+                }
+            }
+        });
+        
+        // Calculate this column's width
+        if (columnIndex === 0) {
+            // First column: takes remaining space
+            const remainingWidth = 12 - totalFixedWidth;
+            return (remainingWidth / 12) * 100;
+        } else {
+            const width = parseInt(column.width) || 0;
+            if (width > 0) {
+                // Fixed width column
+                return (width / 12) * 100;
+            } else {
+                // Auto column (share remaining with other autos)
+                const remainingWidth = 12 - totalFixedWidth;
+                return (remainingWidth / autoColumnCount / 12) * 100;
+            }
+        }
+    }
+    
+    /**
      * Render single column
      */
-    renderColumn(column, columnIndex, sectionFieldname) {
+    renderColumn(column, columnIndex, sectionFieldname, totalColumns, sectionColumns) {
         const columnEl = this.utils.createElement('div', ['le-column']);
         columnEl.dataset.columnIndex = columnIndex;
         columnEl.dataset.sectionFieldname = sectionFieldname;
+        
+        // Calculate and apply visual width
+        const visualWidth = this.calculateColumnVisualWidth(column, columnIndex, sectionColumns);
+        if (visualWidth) {
+            columnEl.style.flex = `0 0 ${visualWidth}%`;
+            columnEl.style.maxWidth = `${visualWidth}%`;
+        }
         
         // Column header with inline editable width
         const columnHeader = this.utils.createElement('div', ['le-column-header']);
@@ -327,6 +375,9 @@ class LayoutEditorVisualRenderer {
         
         // Update local reference
         column.width = newWidth || 'auto';
+        
+        // Re-render to show visual width change
+        this.render();
         
         // Show feedback
         LayoutEditorUtils.showAlert(`Column ${columnIndex + 1} width: ${newWidth || 'auto'}`, 'green');
