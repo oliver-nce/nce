@@ -205,29 +205,33 @@ frappe.ui.form.on("Layout Editor", {
 
 
 /**
- * Populate DocType dropdown with eligible DocTypes (filtered Link field)
+ * Populate DocType dropdown with eligible DocTypes (Select field)
  */
 function populate_doctype_dropdown(frm) {
-    // Fetch eligible DocTypes and set as filter for the Link field
     frappe.call({
         method: "nce.wp_sync.doctype.layout_editor.layout_editor.get_eligible_doctypes",
         callback: function(r) {
             if (r.message && r.message.length > 0) {
                 const eligible_doctypes = r.message;
                 
-                // Set query filter for the Link field
-                frm.set_query('target_doctype', function() {
-                    return {
-                        filters: {
-                            name: ['in', eligible_doctypes]
-                        }
-                    };
-                });
+                // Build options with empty first option
+                const options = [''].concat(eligible_doctypes);
+                
+                // Set options for Select field
+                frm.set_df_property('target_doctype', 'options', options.join('\n'));
+                
+                // Clear the current selection on first load
+                if (!frm.doc.target_doctype) {
+                    frm.set_value('target_doctype', '');
+                }
                 
                 // Update description to show count
                 frm.set_df_property('target_doctype', 'description', 
-                    `${eligible_doctypes.length} eligible DocTypes (WP-prefixed and Sync Task targets)`
+                    `${eligible_doctypes.length} eligible DocTypes available`
                 );
+                
+                // Refresh the field to show new options
+                frm.refresh_field('target_doctype');
             }
         }
     });
@@ -392,9 +396,15 @@ function initialize_visual_editor(frm) {
     if (!frm.doc.target_doctype) {
         const container = $('#visual-editor-container');
         container.html(`
-            <div class="text-muted text-center" style="padding: 100px 20px;">
-                <p><strong>⚠️ Please select a DocType first</strong></p>
-                <p>Go back to the JSON Editor tab and select a DocType, then click "Load JSON"</p>
+            <div class="text-center" style="padding: 80px 20px;">
+                <div style="font-size: 48px; margin-bottom: 20px;">📋</div>
+                <h3 style="color: #333; margin-bottom: 15px;">No DocType Selected</h3>
+                <p style="color: #666; margin-bottom: 25px;">
+                    Please select a DocType from the dropdown to start editing.
+                </p>
+                <button class="btn btn-primary" onclick="$('#json-editor-tab-link').click()">
+                    ← Go to JSON Editor Tab
+                </button>
             </div>
         `);
         return;

@@ -27,10 +27,8 @@
         },
         {
             "fieldname": "target_doctype",
-            "fieldtype": "Link",
+            "fieldtype": "Select",
             "label": "Select DocType",
-            "options": "DocType",
-            "reqd": 1,
             "description": "Choose the DocType whose layout you want to edit"
         },
         {
