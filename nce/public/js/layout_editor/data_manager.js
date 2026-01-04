@@ -544,44 +544,62 @@ class LayoutEditorDataManager {
             return false;
         }
         
+        // Get the column ranges in rawFields BEFORE any modification
+        const columnRanges = this.getColumnFieldRanges(sectionFieldname);
+        console.log('Column ranges:', columnRanges);
+        
+        if (!columnRanges[fromIndex]) {
+            console.error('Could not determine column field range for index:', fromIndex);
+            return false;
+        }
+        
         // Get width info before moving
         const movingColumn = columns[fromIndex];
         const movingColumnWidth = (fromIndex > 0 && movingColumn.columnBreakFieldname) 
             ? (parseInt(movingColumn.width) || 0) 
             : 0;
         
-        // Special case: moving TO position 0 (first column)
+        // Extract the fields for the moving column from rawFields
+        const movingRange = columnRanges[fromIndex];
+        const movingFields = this.rawFields.splice(movingRange.start, movingRange.count);
+        console.log('Extracted fields:', movingFields.map(f => f.fieldname));
+        
+        // Recalculate ranges after extraction
+        const updatedRanges = this.getColumnFieldRanges(sectionFieldname);
+        console.log('Updated ranges after extraction:', updatedRanges);
+        
+        // Calculate insertion point
+        let insertIndex;
         if (toIndex === 0) {
-            // The column moving to position 0 becomes "auto" (loses width)
-            // The column currently at position 0 moves to position 1 and gets the width
-            
-            const oldFirstColumn = columns[0];
-            
-            // If moving column had a width, the old first column needs to get that width
-            if (movingColumnWidth > 0 && movingColumn.columnBreakFieldname) {
-                // Old first column will need a Column Break with the moving column's width
-                // For now, we'll track this as a property change
-                
-                // The old first column doesn't have a Column Break, so we can't set its width directly
-                // This is a limitation - we'd need to create a new Column Break field
-                // For now, let's just swap positions and note the width transfer
-                console.log(`Column ${fromIndex} (width: ${movingColumnWidth}) moving to position 0 (becomes auto)`);
-                console.log(`Column 0 moving to position ${fromIndex} (should get width ${movingColumnWidth})`);
+            // Moving to first column position - insert at section start (after Section Break)
+            const sectionIdx = this.rawFields.findIndex(f => f.fieldname === sectionFieldname);
+            insertIndex = sectionIdx + 1;
+        } else if (fromIndex < toIndex) {
+            // Moving right - insert after the target column
+            const adjustedToIndex = toIndex - 1; // Adjust because we removed one
+            if (updatedRanges[adjustedToIndex]) {
+                insertIndex = updatedRanges[adjustedToIndex].start + updatedRanges[adjustedToIndex].count;
+            } else {
+                insertIndex = this.rawFields.length;
+            }
+        } else {
+            // Moving left - insert before the target column  
+            if (updatedRanges[toIndex]) {
+                insertIndex = updatedRanges[toIndex].start;
+            } else {
+                insertIndex = 0;
             }
         }
         
-        // Perform the move in the structure
-        const [removed] = columns.splice(fromIndex, 1);
-        columns.splice(toIndex, 0, removed);
+        console.log('Inserting at index:', insertIndex);
         
-        // Now we need to update the rawFields array to reflect column reordering
-        // This is complex because Column Breaks are actual fields
-        this.reorderColumnFields(section, fromIndex, toIndex, movingColumnWidth);
+        // Insert the fields at new position
+        this.rawFields.splice(insertIndex, 0, ...movingFields);
         
-        // Rebuild structure
+        // Rebuild structure from updated rawFields
         this.buildStructure();
         
-        // Track changes
+        // Track changes for idx
         this.trackSectionReorder();
         
         console.log(`Column moved from ${fromIndex} to ${toIndex} in section ${sectionFieldname}`);
@@ -589,72 +607,55 @@ class LayoutEditorDataManager {
     }
     
     /**
-     * Reorder column fields in rawFields array
-     * Handles the special width transfer when moving to/from position 1
+     * Get field ranges for each column in a section
+     * Returns array of { start, count } for each column
      */
-    reorderColumnFields(section, fromIndex, toIndex, movingColumnWidth) {
-        // Find the Section Break in rawFields
-        const sectionStartIdx = this.rawFields.findIndex(f => f.fieldname === section.fieldname);
-        if (sectionStartIdx === -1) {
-            console.error('Section not found in rawFields');
-            return;
+    getColumnFieldRanges(sectionFieldname) {
+        const ranges = [];
+        
+        // Find section start
+        const sectionIdx = this.rawFields.findIndex(f => f.fieldname === sectionFieldname);
+        if (sectionIdx === -1) {
+            console.error('Section not found:', sectionFieldname);
+            return ranges;
         }
         
-        // Find all Column Breaks in this section
-        const columnBreaks = [];
-        let inSection = false;
+        const startIdx = sectionIdx + 1; // Start after Section Break
         
-        for (let i = 0; i < this.rawFields.length; i++) {
+        // Find section end (next Section Break or Tab Break or end of array)
+        let sectionEndIdx = this.rawFields.length;
+        for (let i = startIdx; i < this.rawFields.length; i++) {
+            const field = this.rawFields[i];
+            if (field.fieldtype === 'Section Break' || field.fieldtype === 'Tab Break') {
+                sectionEndIdx = i;
+                break;
+            }
+        }
+        
+        // Parse columns - first column starts right after Section Break
+        let currentColumnStart = startIdx;
+        
+        for (let i = startIdx; i < sectionEndIdx; i++) {
             const field = this.rawFields[i];
             
-            if (field.fieldname === section.fieldname) {
-                inSection = true;
-                continue;
-            }
-            
-            if (inSection) {
-                if (field.fieldtype === 'Section Break' || field.fieldtype === 'Tab Break') {
-                    break; // End of section
-                }
-                if (field.fieldtype === 'Column Break') {
-                    columnBreaks.push({ index: i, field: field });
-                }
+            if (field.fieldtype === 'Column Break') {
+                // End of previous column
+                ranges.push({
+                    start: currentColumnStart,
+                    count: i - currentColumnStart
+                });
+                // New column starts at this Column Break
+                currentColumnStart = i;
             }
         }
         
-        // Handle width transfer when moving to position 0
-        if (toIndex === 0 && fromIndex > 0) {
-            // Column moving to position 0: clear its width (it becomes auto)
-            const movingColBreak = columnBreaks[fromIndex - 1]; // -1 because first column has no break
-            if (movingColBreak && movingColumnWidth > 0) {
-                // The column that WAS at position 0 needs to get this width
-                // But it doesn't have a Column Break yet...
-                // We need to transfer the width to what will become column 1
-                
-                // After the move, the old column at position 0 will be at position 1
-                // So the Column Break at index 0 (which was for the moving column) 
-                // should keep its width, but now applies to the old first column
-                
-                // Actually, let's just clear the width on the moving column
-                // and set it on the first Column Break (which will now apply to old Col 0)
-                this.updateFieldProperty(movingColBreak.field.fieldname, 'columns', movingColumnWidth);
-            }
-        } else if (fromIndex === 0 && toIndex > 0) {
-            // Column moving FROM position 0: it needs to get a width
-            // The column moving to position 0 loses its width
-            const targetColBreak = columnBreaks[toIndex - 1];
-            if (targetColBreak) {
-                const targetWidth = parseInt(targetColBreak.field.columns) || 0;
-                if (targetWidth > 0) {
-                    // Clear the width on the column that's moving to position 0
-                    this.updateFieldProperty(targetColBreak.field.fieldname, 'columns', 0);
-                }
-            }
-        }
+        // Add last column (from last Column Break or section start to section end)
+        ranges.push({
+            start: currentColumnStart,
+            count: sectionEndIdx - currentColumnStart
+        });
         
-        // Note: Full field reordering in rawFields is complex
-        // For now, we rely on the structure being rebuilt and idx tracking
-        // A more complete implementation would physically move the Column Break fields
+        return ranges;
     }
 }
 
