@@ -220,10 +220,14 @@ function populate_doctype_dropdown(frm) {
                 // Set options for Select field
                 frm.set_df_property('target_doctype', 'options', options.join('\n'));
                 
-                // Clear the current selection on first load
-                if (!frm.doc.target_doctype) {
-                    frm.set_value('target_doctype', '');
-                }
+                // ALWAYS clear selection and JSON on page load (fresh start)
+                frm.set_value('target_doctype', '');
+                frm.set_value('json_editor', '');
+                frm.set_df_property('structure_preview', 'options', '');
+                
+                // Reset validation state
+                frm.doc.__validated = false;
+                frm.doc.__json_changed = false;
                 
                 // Update description to show count
                 frm.set_df_property('target_doctype', 'description', 
