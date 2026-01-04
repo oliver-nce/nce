@@ -10,7 +10,18 @@ import re
 import os
 import subprocess
 from datetime import datetime
-from nce import __version__, MAJOR_VERSION
+from nce import __version__, __branch__, MAJOR_VERSION
+
+
+def extend_bootinfo(bootinfo):
+    """
+    Add NCE app info to boot data.
+    Available on all pages as:
+      - frappe.boot.nce_version
+      - frappe.boot.nce_branch
+    """
+    bootinfo.nce_version = __version__
+    bootinfo.nce_branch = __branch__
 
 
 def get_version_info():

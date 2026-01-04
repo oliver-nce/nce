@@ -98,6 +98,11 @@ scheduler_events = {
 # Export these doctypes when running bench export-fixtures
 # fixtures = []
 
+# Boot Info
+# ---------
+# Add app version and branch to boot data (available as frappe.boot.nce_version, frappe.boot.nce_branch)
+extend_bootinfo = "nce.wp_sync.api.extend_bootinfo"
+
 # User Data Protection
 # --------------------
 # user_data_fields = [
