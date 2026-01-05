@@ -156,6 +156,56 @@ class LayoutEditorVisualRenderer {
             `
         );
         
+        // Height control buttons (reduce/expand text field heights)
+        const heightControls = this.utils.createElement('div', ['le-section-height-controls']);
+        
+        // Reduce height button
+        const reduceBtn = this.utils.createElement(
+            'button',
+            ['le-height-btn', 'le-height-reduce'],
+            { 
+                title: 'Reduce all text fields to minimum height in section',
+                'data-section-fieldname': section.fieldname
+            }
+        );
+        reduceBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="4" y1="4" x2="20" y2="4"/>
+            <line x1="4" y1="20" x2="20" y2="20"/>
+            <line x1="12" y1="7" x2="12" y2="12"/>
+            <polyline points="8,10 12,14 16,10"/>
+            <line x1="12" y1="17" x2="12" y2="12"/>
+            <polyline points="8,14 12,10 16,14"/>
+        </svg>`;
+        reduceBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.reduceFieldHeightsInSection(section.fieldname);
+        });
+        
+        // Expand height button
+        const expandBtn = this.utils.createElement(
+            'button',
+            ['le-height-btn', 'le-height-expand'],
+            { 
+                title: 'Expand all text fields to maximum height in section',
+                'data-section-fieldname': section.fieldname
+            }
+        );
+        expandBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="4" y1="4" x2="20" y2="4"/>
+            <line x1="4" y1="20" x2="20" y2="20"/>
+            <line x1="12" y1="12" x2="12" y2="7"/>
+            <polyline points="8,9 12,5 16,9"/>
+            <line x1="12" y1="12" x2="12" y2="17"/>
+            <polyline points="8,15 12,19 16,15"/>
+        </svg>`;
+        expandBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.expandFieldHeightsInSection(section.fieldname);
+        });
+        
+        heightControls.appendChild(reduceBtn);
+        heightControls.appendChild(expandBtn);
+        
         const controls = this.utils.createElement(
             'div',
             ['le-section-controls'],
@@ -167,9 +217,125 @@ class LayoutEditorVisualRenderer {
         );
         
         header.appendChild(title);
+        header.appendChild(heightControls);
         header.appendChild(controls);
         
         return header;
+    }
+    
+    /**
+     * Get text-type fields from a section that have the 'rows' property
+     */
+    getTextFieldsInSection(sectionFieldname) {
+        const structure = this.dataManager.getStructure();
+        if (!structure || !structure.tabs) return [];
+        
+        const currentTab = structure.tabs[structure.currentTab];
+        if (!currentTab || !currentTab.sections) return [];
+        
+        const section = currentTab.sections.find(s => s.fieldname === sectionFieldname);
+        if (!section || !section.columns) return [];
+        
+        const textFields = [];
+        const textFieldTypes = [
+            'Text', 'Small Text', 'Long Text', 'Code', 
+            'Text Editor', 'HTML Editor', 'Markdown Editor',
+            'Data', 'Read Only'
+        ];
+        
+        section.columns.forEach(column => {
+            if (column.fields) {
+                column.fields.forEach(field => {
+                    if (textFieldTypes.includes(field.fieldtype)) {
+                        textFields.push(field);
+                    }
+                });
+            }
+        });
+        
+        return textFields;
+    }
+    
+    /**
+     * Reduce all text field heights in section to minimum
+     */
+    reduceFieldHeightsInSection(sectionFieldname) {
+        const textFields = this.getTextFieldsInSection(sectionFieldname);
+        
+        if (textFields.length === 0) {
+            LayoutEditorUtils.showAlert('No text fields in this section', 'orange');
+            return;
+        }
+        
+        // Find minimum rows value (default to 1 if not set)
+        let minRows = Infinity;
+        textFields.forEach(field => {
+            const rows = parseInt(field.rows) || 1;
+            if (rows < minRows) {
+                minRows = rows;
+            }
+        });
+        
+        // Ensure minimum of 1
+        minRows = Math.max(1, minRows);
+        
+        // Apply minimum to all text fields
+        let changedCount = 0;
+        textFields.forEach(field => {
+            const currentRows = parseInt(field.rows) || 1;
+            if (currentRows !== minRows) {
+                this.dataManager.updateFieldProperty(field.fieldname, 'rows', minRows);
+                changedCount++;
+            }
+        });
+        
+        if (changedCount > 0) {
+            this.render();
+            LayoutEditorUtils.showAlert(`Reduced ${changedCount} field(s) to ${minRows} row(s)`, 'green');
+        } else {
+            LayoutEditorUtils.showAlert('All fields already at minimum height', 'blue');
+        }
+    }
+    
+    /**
+     * Expand all text field heights in section to maximum
+     */
+    expandFieldHeightsInSection(sectionFieldname) {
+        const textFields = this.getTextFieldsInSection(sectionFieldname);
+        
+        if (textFields.length === 0) {
+            LayoutEditorUtils.showAlert('No text fields in this section', 'orange');
+            return;
+        }
+        
+        // Find maximum rows value (default to 1 if not set)
+        let maxRows = 0;
+        textFields.forEach(field => {
+            const rows = parseInt(field.rows) || 1;
+            if (rows > maxRows) {
+                maxRows = rows;
+            }
+        });
+        
+        // Ensure at least 1
+        maxRows = Math.max(1, maxRows);
+        
+        // Apply maximum to all text fields
+        let changedCount = 0;
+        textFields.forEach(field => {
+            const currentRows = parseInt(field.rows) || 1;
+            if (currentRows !== maxRows) {
+                this.dataManager.updateFieldProperty(field.fieldname, 'rows', maxRows);
+                changedCount++;
+            }
+        });
+        
+        if (changedCount > 0) {
+            this.render();
+            LayoutEditorUtils.showAlert(`Expanded ${changedCount} field(s) to ${maxRows} row(s)`, 'green');
+        } else {
+            LayoutEditorUtils.showAlert('All fields already at maximum height', 'blue');
+        }
     }
     
     /**

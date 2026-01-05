@@ -306,6 +306,55 @@
     gap: 8px;
 }
 
+/* Section Height Controls (Reduce/Expand buttons) */
+.le-section-height-controls {
+    display: flex;
+    gap: 4px;
+    margin-right: 12px;
+}
+
+.le-height-btn {
+    width: 28px;
+    height: 28px;
+    padding: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.le-height-btn svg {
+    width: 18px;
+    height: 18px;
+    stroke: white;
+}
+
+.le-height-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: scale(1.05);
+}
+
+.le-height-btn:active {
+    transform: scale(0.95);
+    background: rgba(255, 255, 255, 0.35);
+}
+
+/* Specific button colors on hover */
+.le-height-reduce:hover {
+    background: rgba(215, 223, 35, 0.4); /* Citron tint */
+    border-color: var(--le-brand-primary);
+}
+
+.le-height-expand:hover {
+    background: rgba(215, 223, 35, 0.4); /* Citron tint */
+    border-color: var(--le-brand-primary);
+}
+
 /* Section Body */
 .le-section-body {
     padding: 15px;

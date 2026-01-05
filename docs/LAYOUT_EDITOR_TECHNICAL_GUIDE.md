@@ -650,3 +650,4 @@ layoutEditorWidget.dataManager.hasChanges()   // Has unsaved changes?
 | 1.0.33 | 2026-01-03 | Core Layout Editor with Property Setters |
 
 
+
