@@ -6,11 +6,6 @@
 
 frappe.ui.form.on('WP Sync Settings', {
     refresh: function(frm) {
-        // Add Back button
-        frm.add_custom_button(__('← Back'), function() {
-            window.history.back();
-        });
-        
         // Add NCE theme class to body for CSS targeting
         $('body').addClass('nce-wp-sync-form');
         
@@ -137,12 +132,5 @@ frappe.ui.form.on('WP Sync Settings', {
     }
 });
 
-// Add Back button to list view
-frappe.listview_settings['WP Sync Settings'] = {
-    onload: function(listview) {
-        listview.page.add_inner_button(__('← Back'), function() {
-            window.history.back();
-        });
-    }
-};
+// Navigation buttons added globally by nce_nav_buttons.js
 
