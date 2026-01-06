@@ -66,8 +66,8 @@ body[data-desk="true"],
    ======================================== */
 .form-page .section-head,
 .page-container .section-head {
-    background: var(--nce-charcoal);
-    color: var(--nce-white);
+    background: var(--nce-silver);
+    color: var(--nce-black);
     padding: 8px 12px;
     border-radius: 4px 4px 0 0;
     font-weight: 500;
@@ -77,7 +77,7 @@ body[data-desk="true"],
 
 .form-page .section-head .collapse-indicator,
 .page-container .section-head .collapse-indicator {
-    color: var(--nce-citron);
+    color: var(--nce-charcoal);
 }
 
 /* ========================================
