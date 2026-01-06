@@ -1,9 +1,6 @@
 /*
  * NCE Brand Theme for Frappe
- * Apply to all WP Sync DocTypes via .nce-wp-sync-form class
- * 
- * Note: data-doctype selectors don't work in Frappe v15
- * JS adds .nce-wp-sync-form to body when form loads
+ * Applies GLOBALLY to all Desk pages
  * 
  * Brand Colors:
  * - White: #ffffff
@@ -16,7 +13,7 @@
  * - Smoke: #141618
  *
  * Fonts:
- * - Primary: Poppins (400)
+ * - Primary: Poppins (400, 500, 600, 700)
  * - Fallback: Verdana
  */
 
@@ -54,16 +51,21 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
 /* ========================================
-   Global Styles for NCE Forms
+   Global Font - All Desk Pages
    ======================================== */
-.nce-wp-sync-form {
+body[data-desk="true"],
+.desk-page,
+.form-page,
+.list-page,
+.page-container {
     font-family: var(--nce-font-family);
 }
 
 /* ========================================
-   Section Headers
+   Section Headers - All Forms
    ======================================== */
-.nce-wp-sync-form .section-head {
+.form-page .section-head,
+.page-container .section-head {
     background: var(--nce-charcoal);
     color: var(--nce-white);
     padding: 8px 12px;
@@ -73,27 +75,31 @@
     margin-top: 15px;
 }
 
-.nce-wp-sync-form .section-head .collapse-indicator {
+.form-page .section-head .collapse-indicator,
+.page-container .section-head .collapse-indicator {
     color: var(--nce-citron);
 }
 
 /* ========================================
-   Form Sections
+   Form Sections - All Forms
    ======================================== */
-.nce-wp-sync-form .form-section {
+.form-page .form-section,
+.page-container .form-section {
     border: 1px solid var(--nce-border);
     border-radius: 0 0 4px 4px;
     background: var(--nce-white);
 }
 
-.nce-wp-sync-form .form-section.card-section {
+.form-page .form-section.card-section,
+.page-container .form-section.card-section {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 /* ========================================
-   Tabs
+   Tabs - All Forms
    ======================================== */
-.nce-wp-sync-form .form-tabs .nav-link {
+.form-page .form-tabs .nav-link,
+.page-container .form-tabs .nav-link {
     font-family: var(--nce-font-family);
     font-weight: 500;
     color: var(--nce-graphite);
@@ -101,23 +107,25 @@
     padding: 10px 16px;
 }
 
-.nce-wp-sync-form .form-tabs .nav-link:hover {
+.form-page .form-tabs .nav-link:hover,
+.page-container .form-tabs .nav-link:hover {
     color: var(--nce-charcoal);
     border-bottom-color: var(--nce-medium-gray);
 }
 
-.nce-wp-sync-form .form-tabs .nav-link.active {
+.form-page .form-tabs .nav-link.active,
+.page-container .form-tabs .nav-link.active {
     color: var(--nce-charcoal);
     border-bottom-color: var(--nce-citron);
     background: transparent;
 }
 
 /* ========================================
-   Buttons - All (Citron with Black Text)
+   Primary Buttons - Citron with Dark Text
    ======================================== */
-.nce-wp-sync-form .btn-primary,
-.nce-wp-sync-form .btn-secondary,
-.nce-wp-sync-form .btn-default {
+.form-page .btn-primary,
+.page-container .btn-primary,
+.modal .btn-primary {
     background-color: var(--nce-citron) !important;
     border-color: var(--nce-citron) !important;
     color: var(--nce-charcoal) !important;
@@ -125,23 +133,35 @@
     font-weight: 500;
 }
 
-.nce-wp-sync-form .btn-primary:hover,
-.nce-wp-sync-form .btn-secondary:hover,
-.nce-wp-sync-form .btn-default:hover {
+.form-page .btn-primary:hover,
+.page-container .btn-primary:hover,
+.modal .btn-primary:hover {
     background-color: var(--nce-primary-dark) !important;
     border-color: var(--nce-primary-dark) !important;
     color: var(--nce-charcoal) !important;
 }
 
+/* Secondary/Default Buttons - Lighter style */
+.form-page .btn-secondary,
+.form-page .btn-default,
+.page-container .btn-secondary,
+.page-container .btn-default {
+    font-family: var(--nce-font-family);
+    font-weight: 500;
+}
+
 /* ========================================
-   Form Fields
+   Form Fields - Focus States
    ======================================== */
-.nce-wp-sync-form .form-control:focus {
+.form-page .form-control:focus,
+.page-container .form-control:focus,
+.modal .form-control:focus {
     border-color: var(--nce-citron);
     box-shadow: 0 0 0 2px rgba(215, 223, 35, 0.2);
 }
 
-.nce-wp-sync-form .frappe-control .control-label {
+.form-page .frappe-control .control-label,
+.page-container .frappe-control .control-label {
     font-family: var(--nce-font-family);
     font-weight: 500;
     color: var(--nce-charcoal);
@@ -150,18 +170,21 @@
 /* ========================================
    Links
    ======================================== */
-.nce-wp-sync-form .form-page a {
+.form-page a,
+.page-container a {
     color: var(--nce-charcoal);
 }
 
-.nce-wp-sync-form .form-page a:hover {
+.form-page a:hover,
+.page-container a:hover {
     color: var(--nce-graphite);
 }
 
 /* ========================================
    Page Header / Title
    ======================================== */
-.nce-wp-sync-form .page-title .title-text {
+.form-page .page-title .title-text,
+.page-container .page-title .title-text {
     font-family: var(--nce-font-family);
     font-weight: 600;
     color: var(--nce-charcoal);
@@ -170,7 +193,7 @@
 /* ========================================
    Status Indicators
    ======================================== */
-.nce-wp-sync-form .indicator-pill.green {
+.indicator-pill.green {
     background: var(--nce-citron);
     color: var(--nce-charcoal);
 }
@@ -178,19 +201,38 @@
 /* ========================================
    Alerts / Messages
    ======================================== */
-.nce-wp-sync-form .alert-info {
+.form-page .alert-info,
+.page-container .alert-info {
     background-color: rgba(215, 223, 35, 0.1);
     border-color: var(--nce-citron);
     color: var(--nce-charcoal);
 }
 
 /* ========================================
-   Print / Export - Hide theme for clean output
+   Sidebar / Desk Navigation
+   ======================================== */
+.desk-sidebar .sidebar-label {
+    font-family: var(--nce-font-family);
+}
+
+/* ========================================
+   List View
+   ======================================== */
+.list-page .list-row:hover {
+    background-color: rgba(215, 223, 35, 0.05);
+}
+
+.list-page .list-row-checkbox:checked + .level-left {
+    background-color: rgba(215, 223, 35, 0.1);
+}
+
+/* ========================================
+   Print / Export - Clean output
    ======================================== */
 @media print {
-    .nce-wp-sync-form .section-head {
-        background: none;
-        color: var(--nce-black);
+    .section-head {
+        background: none !important;
+        color: var(--nce-black) !important;
         border-bottom: 2px solid var(--nce-black);
     }
 }
