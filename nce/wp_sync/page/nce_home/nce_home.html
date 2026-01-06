@@ -1,0 +1,111 @@
+<!-- 
+    NCE Home - Landing Page
+    
+    HOW TO ADD A NEW BUTTON:
+    ========================
+    Simply copy one of the button divs below and modify:
+    - data-route: The Frappe route to navigate to (e.g., "app/doctype-name")
+    - data-icon: Emoji or icon character
+    - data-label: Button text
+    - data-description: Optional subtitle text
+    
+    For filtered list views, use:
+    - data-route="app/doctype-name"
+    - data-filters='{"status": "Active"}'
+    
+    The JavaScript auto-wires all buttons - no JS changes needed!
+-->
+
+<div class="nce-home-container">
+    
+    <!-- Header with Logo -->
+    <div class="nce-home-header">
+        <img src="/assets/nce/images/nce_logo.png" alt="NCE Logo" class="nce-home-logo">
+        <h1 class="nce-home-title">NCE Dashboard</h1>
+        <p class="nce-home-subtitle">Quick access to your tools and data</p>
+    </div>
+    
+    <!-- Button Grid -->
+    <div class="nce-button-grid">
+        
+        <!-- ============================================
+             NAVIGATION BUTTONS - Add new buttons here!
+             ============================================ -->
+        
+        <!-- WP Sync Settings -->
+        <div class="nce-shortcut-btn" 
+             data-route="app/wp-sync-settings" 
+             data-icon="⚙️" 
+             data-label="WP Sync Settings"
+             data-description="WordPress connection">
+        </div>
+        
+        <!-- Layout Editor -->
+        <div class="nce-shortcut-btn" 
+             data-route="app/layout-editor" 
+             data-icon="📐" 
+             data-label="Layout Editor"
+             data-description="Edit DocType layouts">
+        </div>
+        
+        <!-- WP Sync Tasks -->
+        <div class="nce-shortcut-btn" 
+             data-route="app/wp-sync-task" 
+             data-icon="📋" 
+             data-label="Sync Tasks"
+             data-description="Manage sync jobs">
+        </div>
+        
+        <!-- WP Sync Logs -->
+        <div class="nce-shortcut-btn" 
+             data-route="app/wp-sync-log" 
+             data-icon="📜" 
+             data-label="Sync Logs"
+             data-description="View sync history">
+        </div>
+        
+        <!-- Zoho Registrations -->
+        <div class="nce-shortcut-btn" 
+             data-route="app/wp-zoho-registration" 
+             data-icon="👥" 
+             data-label="Registrations"
+             data-description="Zoho registration data">
+        </div>
+        
+        <!-- New Registration -->
+        <div class="nce-shortcut-btn" 
+             data-route="app/wp-zoho-registration/new" 
+             data-icon="➕" 
+             data-label="New Registration"
+             data-description="Create new record">
+        </div>
+        
+        <!-- ============================================
+             EXIT BUTTONS - Highlighted at end
+             ============================================ -->
+        
+        <!-- Insights App (Primary/Highlighted) -->
+        <div class="nce-shortcut-btn nce-btn-primary" 
+             data-route="insights" 
+             data-icon="📊" 
+             data-label="Insights"
+             data-description="Data analytics">
+        </div>
+        
+        <!-- Standard Desk Home (Primary/Highlighted) -->
+        <div class="nce-shortcut-btn nce-btn-primary" 
+             data-route="app" 
+             data-icon="🏠" 
+             data-label="Frappe Desk"
+             data-description="Standard home page">
+        </div>
+        
+    </div>
+    
+    <!-- Footer -->
+    <div class="nce-home-footer">
+        <span class="nce-version-badge"></span>
+    </div>
+    
+</div>
+
