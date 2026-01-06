@@ -19,7 +19,10 @@ app_license = "MIT"
 # ------------------
 # include js, css files in header of desk.html
 app_include_css = "/assets/nce/css/nce_theme.css"
-app_include_js = "/assets/nce/js/nce_version_badge.js"
+app_include_js = [
+    "/assets/nce/js/nce_version_badge.js",
+    "/assets/nce/js/nce_nav_buttons.js"
+]
 
 # include js, css files in header of web template
 # web_include_css = "/assets/nce/css/nce.css"
