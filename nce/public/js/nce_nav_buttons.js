@@ -8,13 +8,16 @@
 (function() {
     'use strict';
     
-    // Hook into form refresh event for ALL doctypes
-    $(document).on('form-refresh', function(e, frm) {
+    /**
+     * Add nav buttons to a form
+     * Frappe's add_custom_button handles duplicates internally
+     */
+    function addNavButtonsToForm(frm) {
         if (!frm || !frm.add_custom_button) return;
         
-        // Don't add if already added this session
-        if (frm._nce_nav_added) return;
-        frm._nce_nav_added = true;
+        // Remove existing nav buttons first (clean slate)
+        frm.remove_custom_button(__('🏠 Home'));
+        frm.remove_custom_button(__('← Back'));
         
         // Add Home button
         frm.add_custom_button(__('🏠 Home'), function() {
@@ -25,27 +28,45 @@
         frm.add_custom_button(__('← Back'), function() {
             window.history.back();
         });
+    }
+    
+    /**
+     * Add nav buttons to a list view page
+     */
+    function addNavButtonsToListView(page) {
+        if (!page || !page.add_inner_button) return;
+        
+        // Check if buttons already exist by looking for them
+        const $toolbar = page.inner_toolbar || page.$inner_toolbar;
+        if ($toolbar && $toolbar.find(':contains("🏠 Home")').length > 0) {
+            return; // Already has buttons
+        }
+        
+        page.add_inner_button(__('🏠 Home'), function() {
+            frappe.set_route('nce-home');
+        });
+        
+        page.add_inner_button(__('← Back'), function() {
+            window.history.back();
+        });
+    }
+    
+    // Hook into form refresh event for ALL doctypes
+    $(document).on('form-refresh', function(e, frm) {
+        addNavButtonsToForm(frm);
     });
     
-    // Hook into list view load for ALL doctypes
+    // Also hook into form-load for initial load
+    $(document).on('form-load', function(e, frm) {
+        addNavButtonsToForm(frm);
+    });
+    
+    // For list views - hook into page-change
     $(document).on('page-change', function() {
-        // Wait for page to render
-        setTimeout(function() {
-            // Check if we're on a list view
-            const cur_list = frappe.views && frappe.views.ListView && cur_list;
-            if (cur_list && cur_list.page && !cur_list._nce_nav_added) {
-                cur_list._nce_nav_added = true;
-                
-                // Add to list view toolbar
-                cur_list.page.add_inner_button(__('🏠 Home'), function() {
-                    frappe.set_route('nce-home');
-                });
-                
-                cur_list.page.add_inner_button(__('← Back'), function() {
-                    window.history.back();
-                });
-            }
-        }, 100);
+        // Check if there's an active list view
+        if (typeof cur_list !== 'undefined' && cur_list && cur_list.page) {
+            addNavButtonsToListView(cur_list.page);
+        }
     });
     
 })();
