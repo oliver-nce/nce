@@ -21,7 +21,8 @@
         
         // Add Home button
         frm.add_custom_button(__('🏠 Home'), function() {
-            frappe.set_route('nce-home');
+            // frappe.set_route('nce-home');
+            frappe.set_route('app/build');
         });
         
         // Add Back button  
@@ -43,7 +44,8 @@
         }
         
         page.add_inner_button(__('🏠 Home'), function() {
-            frappe.set_route('nce-home');
+            // frappe.set_route('nce-home');
+            frappe.set_route('app/build');
         });
         
         page.add_inner_button(__('← Back'), function() {
